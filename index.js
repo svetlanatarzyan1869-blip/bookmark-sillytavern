@@ -272,7 +272,7 @@ function addSettingsPanel() {
     <div class="bookmark-settings">
       <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-          <b>bookmark⋆⭒˚.⋆</b> <small style="opacity:.6">v2.0.5</small><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+          <b>bookmark⋆⭒˚.⋆</b> <small style="opacity:.6">v2.0.6</small><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
           <label class="checkbox_label"><input id="bm_doodle" type="checkbox" ${s.doodle ? 'checked' : ''}><span>Каракули на плашке</span></label>
@@ -283,6 +283,9 @@ function addSettingsPanel() {
           </select>
           <label for="bm_bg">Фон плашки</label>
           <select id="bm_bg" class="text_pole"><option value="paper">бумага</option><option value="plain">однотонный</option></select>
+          <div class="flex-container" style="margin-top:6px">
+            <input id="bm_reset_pos" class="menu_button" type="button" value="Вернуть плашку на место">
+          </div>
           <small>Двойной тап по фразе в сообщении — выписать. Метки по краям тянут границы.</small>
         </div>
       </div>
@@ -292,6 +295,13 @@ function addSettingsPanel() {
     $('#bm_theme').on('change', function () { settings().theme = this.value; saveSettings(); applyLook(); });
     $('#bm_bg').on('change', function () { settings().bg = this.value; saveSettings(); applyLook(); });
     $('#bm_doodle').on('change', function () { settings().doodle = this.checked; saveSettings(); applyLook(); });
+    $('#bm_reset_pos').on('click', function () {
+        const st = settings(); delete st.fabPos; delete st.popPos; saveSettings();
+        for (const el of [root.querySelector('.cq-fab'), pop]) {
+            el.style.left = ''; el.style.top = ''; el.style.right = ''; el.style.bottom = '';
+        }
+        toast('Плашка возвращена на место', 'success');
+    });
 }
 
 /* ── запуск ── */
@@ -309,9 +319,13 @@ function mount() {
         if (Date.now() - (fabEl.__cqMoved || 0) < 250) return;   // это было перетаскивание
         if (Date.now() - (fabEl.__cqTapped || 0) < 400) return;  // тап уже обработан
         fabEl.__cqTapped = Date.now();
-        clampAll();
         root.classList.toggle('open');
-        if (root.classList.contains('open')) draw();
+        if (root.classList.contains('open')) {
+            draw();
+            // размеры известны только у видимого элемента — правим положение уже после показа
+            requestAnimationFrame(() => { clampIntoView(pop); setTimeout(() => clampIntoView(pop), 60); });
+        }
+        clampIntoView(root.querySelector('.cq-fab'));
     };
     fabEl.addEventListener('click', e => { e.stopPropagation(); toggle(); });
     fabEl.addEventListener('touchend', e => { e.stopPropagation(); toggle(); }, { passive: true });
@@ -339,6 +353,9 @@ function mount() {
 function restorePos(el, key) {
     const p = settings()[key];
     if (!p || typeof p.left !== 'number') return;
+    // позиция общая для всех устройств: если экран сильно другой (компьютер ↔ телефон),
+    // сохранённые координаты бессмысленны — оставляем положение из CSS
+    if (typeof p.vw === 'number' && Math.abs(p.vw - innerWidth) > 200) return;
     el.style.left = p.left + 'px'; el.style.top = p.top + 'px';
     el.style.right = 'auto'; el.style.bottom = 'auto';
     clampIntoView(el);
@@ -347,7 +364,9 @@ function restorePos(el, key) {
    на телефоне запросто оказывается за краем — поэтому всегда подтягиваем внутрь */
 function clampIntoView(el) {
     if (!el || el.style.left === '') return;
-    const w = el.offsetWidth || 44, h = el.offsetHeight || 44;
+    // у скрытого элемента размеры нулевые — мерить бесполезно, вернёмся когда покажется
+    if (!el.offsetWidth || !el.offsetHeight) return;
+    const w = el.offsetWidth, h = el.offsetHeight;
     const maxL = Math.max(2, innerWidth - w - 2), maxT = Math.max(2, innerHeight - h - 2);
     const l = Math.min(Math.max(2, parseFloat(el.style.left) || 0), maxL);
     const t = Math.min(Math.max(2, parseFloat(el.style.top) || 0), maxT);
@@ -390,7 +409,7 @@ function dragify(el, key, handle) {
         active = false;
         if (moved) {
             const r = el.getBoundingClientRect();
-            settings()[key] = { left: Math.round(r.left), top: Math.round(r.top) };
+            settings()[key] = { left: Math.round(r.left), top: Math.round(r.top), vw: innerWidth };
             saveSettings();
             el.__cqMoved = Date.now();     // чтобы клик после перетаскивания не сработал
         }
@@ -420,7 +439,7 @@ jQuery(async () => {
     window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { clampAll(); relayoutFlags(); }, 200); });
     window.addEventListener('orientationchange', () => setTimeout(clampAll, 300));
     redo();
-    console.log('[bookmark] готово, v2.0.5');
+    console.log('[bookmark] готово, v2.0.6');
     // самодиагностика: что реально применилось к тексту
     setTimeout(() => {
         const q = document.querySelector('#cq-root .cq-hdr-label');

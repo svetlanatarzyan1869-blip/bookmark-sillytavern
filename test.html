@@ -28,6 +28,12 @@ window.$ = $; window.jQuery = fn => (typeof fn==='function' ? fn() : $(fn));
 /* ── мок SillyTavern ── */
 const listeners = {};
 const fakeMeta = {}, fakeSettings = {};
+/* ?desktoppos — имитируем настройки, сохранённые на широком экране компьютера */
+if (location.search.includes('desktoppos')) fakeSettings.bookmark_quotes = {
+  colors: [], theme: 'auto', bg: 'paper', doodle: true,
+  fabPos: { left: 1750, top: 900, vw: 1920 },
+  popPos: { left: 1500, top: 600, vw: 1920 },
+};
 window.SillyTavern = { getContext: () => ({
   chat: [{mes:'msg0'},{mes:'msg1'}],
   chatMetadata: fakeMeta,
