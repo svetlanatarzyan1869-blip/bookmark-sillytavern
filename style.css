@@ -541,13 +541,21 @@
 #cq-root .cq-fab{ touch-action:none; }
 #cq-root .cq-pop-head{ cursor:move; touch-action:none; }
 
-/* Тема SillyTavern может задавать свои цвета текста — фиксируем наши явно */
-#cq-root, #cq-root *{ color:inherit; }
-#cq-root{ color:var(--bm-ink); }
-#cq-root .cq-quote, #cq-root .cq-hdr-label, #cq-root .cq-empty b{ color:var(--bm-ink); }
-#cq-root .cq-note, #cq-root .cq-note-ta{ color:var(--bm-pen); }
+/* ══════════ ЖЁСТКАЯ ФИКСАЦИЯ ЦВЕТА ТЕКСТА ══════════
+   Тема SillyTavern может перебивать цвет и через переменные, и напрямую,
+   и с !important. Здесь мы закрываем вопрос окончательно. */
+#cq-root, #cq-root *{ color:var(--bm-ink) !important; text-shadow:none !important; opacity:1 !important; }
+#cq-root .cq-quote{ color:var(--bm-ink) !important; }
+#cq-root .cq-note, #cq-root .cq-note-ta{ color:var(--bm-pen) !important; }
+#cq-root .cq-hdr-label{ color:var(--bm-ink) !important; }
 #cq-root .cq-chip, #cq-root .cq-tools button, #cq-root .cq-mv,
-#cq-root .cq-empty, #cq-root .cq-msgprev{ color:var(--bm-ink2); }
-#cq-root .cq-chip.on, #cq-root .cq-folderbar > span:first-child{ color:var(--bm-ink); }
-#cq-root .cq-packtab, #cq-root .cq-chip-add, #cq-root .cq-swhint{ color:var(--bm-ink3); }
-#cq-root input, #cq-root textarea, #cq-root select{ color:var(--bm-ink); }
+#cq-root .cq-empty, #cq-root .cq-msgprev, #cq-root .cq-mv-l,
+#cq-root .cq-srchdr, #cq-root .cq-pickttl, #cq-root .cq-fslbl{ color:var(--bm-ink2) !important; }
+#cq-root .cq-chip.on, #cq-root .cq-folderbar > span:first-child,
+#cq-root .cq-fset, #cq-root .cq-packtab.on{ color:var(--bm-ink) !important; }
+#cq-root .cq-packtab, #cq-root .cq-chip-add, #cq-root .cq-swhint,
+#cq-root .cq-srcwho, #cq-root .cq-msgwho, #cq-root .cq-msgcar{ color:var(--bm-ink3) !important; }
+#cq-root input, #cq-root textarea, #cq-root select{ color:var(--bm-ink) !important; }
+/* и фон плашки/карточек тоже фиксируем — тема не должна его перекрашивать */
+#cq-root .cq-pop{ background-color:var(--bm-paper) !important; }
+#cq-root .cq-item{ background-color:var(--bm-card) !important; }

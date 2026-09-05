@@ -272,7 +272,7 @@ function addSettingsPanel() {
     <div class="bookmark-settings">
       <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-          <b>bookmark⋆⭒˚.⋆</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+          <b>bookmark⋆⭒˚.⋆</b> <small style="opacity:.6">v2.0.3</small><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
           <label class="checkbox_label"><input id="bm_doodle" type="checkbox" ${s.doodle ? 'checked' : ''}><span>Каракули на плашке</span></label>
@@ -399,5 +399,12 @@ jQuery(async () => {
     let rz = 0;
     window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(relayoutFlags, 200); });
     redo();
-    console.log('[bookmark] готово');
+    console.log('[bookmark] готово, v2.0.3');
+    // самодиагностика: что реально применилось к тексту
+    setTimeout(() => {
+        const q = document.querySelector('#cq-root .cq-hdr-label');
+        if (q) console.log('[bookmark] цвет заголовка:', getComputedStyle(q).color,
+                           '| фон плашки:', getComputedStyle(document.querySelector('#cq-root .cq-pop')).backgroundColor,
+                           '| классы:', document.getElementById('cq-root').className);
+    }, 800);
 });
