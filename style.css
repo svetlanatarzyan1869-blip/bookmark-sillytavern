@@ -6,6 +6,7 @@
 
 #cq-root{
   --bm-img-paper:url("assets/paper.jpg");
+  --bm-img-paper-dark:url("assets/paper_dark.jpg");
   --bm-img-wave:url("assets/wave.png");
   --bm-pat-check:url("assets/pat_check.jpg");
   --bm-pat-stripes:url("assets/pat_stripes.jpg");
@@ -35,7 +36,7 @@
 }
 /* тёмная: не зелёная, а тёмный крафт/уголь — тот же бумажный фон, просто ночной */
 #cq-root.cq-dark{
-  --bm-pl:linear-gradient(rgba(15,13,16,.945),rgba(15,13,16,.945)),var(--bm-img-paper) center/100% 100% no-repeat;
+  --bm-pl:linear-gradient(rgba(17,15,19,.90),rgba(17,15,19,.90)),var(--bm-img-paper-dark) center/100% 100% no-repeat;
   --bm-lighten:linear-gradient(rgba(255,255,255,.05),rgba(255,255,255,.05));
   --bm-paper:#121013; --bm-paper2:#0d0b0e; --bm-card:#1c191e; --bm-card2:#171419;
   --bm-folder:#2b2730; --bm-folder-on:#39333e;
@@ -563,8 +564,6 @@
 #cq-root#cq-root .cq-packtab, #cq-root#cq-root .cq-chip-add, #cq-root#cq-root .cq-swhint,
 #cq-root#cq-root .cq-srcwho, #cq-root#cq-root .cq-msgwho, #cq-root#cq-root .cq-msgcar{ color:var(--bm-ink3) !important; }
 #cq-root#cq-root input, #cq-root#cq-root textarea, #cq-root#cq-root select{ color:var(--bm-ink) !important; }
-#cq-root#cq-root .cq-pop{ background-color:var(--bm-paper) !important; }
-#cq-root#cq-root .cq-item{ background-color:var(--bm-card) !important; }
 /* подсветка в сообщениях тоже не должна светиться чужой тенью */
 #chat .cq-on, #chat .cq-draft{ text-shadow:none !important; }
 
@@ -598,3 +597,17 @@
 /* сама подсветка цитаты: без чужого свечения и без перекраски текста */
 #chat#chat .cq-w, #chat#chat .cq-g{ text-shadow:none !important; }
 #chat#chat .cq-on, #chat#chat .cq-draft{ text-shadow:none !important; }
+
+/* фон плашки и карточек тема ST тоже не должна перекрашивать.
+   ВАЖНО: --bm-pl это значение для СВОЙСТВА background целиком (с позицией и размером),
+   в background-image его класть нельзя — значение невалидно и картинка пропадает. */
+#cq-root#cq-root .cq-pop{
+  background:var(--bm-pl) !important;
+  background-color:var(--bm-paper) !important;
+}
+#cq-root#cq-root .cq-item{
+  background:var(--bm-lighten), var(--bm-pl) !important;
+  background-color:var(--bm-card) !important;
+}
+#cq-root#cq-root.cq-bg-plain .cq-pop{ background:none !important; background-color:var(--bm-paper) !important; }
+#cq-root#cq-root.cq-bg-plain .cq-item{ background:none !important; background-color:var(--bm-card) !important; }
