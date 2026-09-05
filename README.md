@@ -11,7 +11,15 @@ SillyTavern/data/<твой-пользователь>/extensions/
 ```
 и перезагрузи страницу ST. Расширение появится в **Extensions → bookmark⋆⭒˚.⋆**.
 
-**Через «Install from URL»:** нужен git-репозиторий — если выложишь папку на GitHub, ST установит её по ссылке и будет обновлять сам (`auto_update` уже включён в манифесте).
+**Через «Install from URL» (проще всего):**
+в SillyTavern открой **Extensions → Install extension** и вставь ссылку:
+
+```
+https://github.com/svetlanatarzyan1869-blip/bookmark-sillytavern
+```
+
+ST скачает расширение сам и будет обновлять при выходе новых версий
+(`auto_update` включён в манифесте).
 
 ## Как пользоваться
 
