@@ -60,18 +60,18 @@
   --bm-edge:#d8ccc0; --bm-edge-soft:rgba(150,130,112,.26); --bm-rule:rgba(150,130,112,.18);
   --bm-ink:#3a332c; --bm-ink2:#7d7266; --bm-ink3:#9a9086;
 }
-#cq-root.cq-glass .cq-pop{-webkit-backdrop-filter:blur(22px) saturate(150%);backdrop-filter:blur(22px) saturate(150%);}
+#cq-root.cq-glass .cq-pop{-webkit-backdrop-filter:blur(30px) saturate(165%);backdrop-filter:blur(30px) saturate(165%);}
 #cq-root.cq-glass.cq-base-light{
-  --bm-paper:rgba(242,234,224,.42); --bm-paper2:rgba(230,218,204,.50);
-  --bm-card:rgba(252,247,240,.55); --bm-card2:rgba(246,239,230,.48);
+  --bm-paper:rgba(244,237,228,.22); --bm-paper2:rgba(232,221,208,.30);
+  --bm-card:rgba(253,249,243,.30); --bm-card2:rgba(247,241,233,.24);
   --bm-folder:rgba(216,200,168,.9); --bm-folder-on:rgba(250,245,234,.94);
   --bm-edge:rgba(150,124,86,.55); --bm-edge-soft:rgba(146,118,80,.34);
   --bm-ink:#3d342b; --bm-ink2:#7a6c58; --bm-ink3:#8f8474; --bm-pen:#201c18; --bm-chip-veil:rgba(255,255,255,.34);
   --bm-field:rgba(255,255,255,.5);
 }
 #cq-root.cq-glass.cq-base-dark{
-  --bm-paper:rgba(18,16,20,.45); --bm-paper2:rgba(12,10,14,.55);
-  --bm-card:rgba(30,27,33,.55); --bm-card2:rgba(24,21,27,.48);
+  --bm-paper:rgba(16,14,18,.26); --bm-paper2:rgba(10,9,12,.34);
+  --bm-card:rgba(28,25,31,.32); --bm-card2:rgba(22,19,25,.26);
   --bm-folder:rgba(52,47,58,.9); --bm-folder-on:rgba(68,61,74,.94);
   --bm-edge:rgba(168,158,180,.42); --bm-edge-soft:rgba(178,168,186,.24);
   --bm-ink:#e6ded2; --bm-ink2:#a49b8e; --bm-ink3:#867e73; --bm-pen:#efe7d6; --bm-chip-veil:rgba(14,12,16,.58);
@@ -541,21 +541,33 @@
 #cq-root .cq-fab{ touch-action:none; }
 #cq-root .cq-pop-head{ cursor:move; touch-action:none; }
 
-/* ══════════ ЖЁСТКАЯ ФИКСАЦИЯ ЦВЕТА ТЕКСТА ══════════
-   Тема SillyTavern может перебивать цвет и через переменные, и напрямую,
-   и с !important. Здесь мы закрываем вопрос окончательно. */
-#cq-root, #cq-root *{ color:var(--bm-ink) !important; text-shadow:none !important; opacity:1 !important; }
-#cq-root .cq-quote{ color:var(--bm-ink) !important; }
-#cq-root .cq-note, #cq-root .cq-note-ta{ color:var(--bm-pen) !important; }
-#cq-root .cq-hdr-label{ color:var(--bm-ink) !important; }
-#cq-root .cq-chip, #cq-root .cq-tools button, #cq-root .cq-mv,
-#cq-root .cq-empty, #cq-root .cq-msgprev, #cq-root .cq-mv-l,
-#cq-root .cq-srchdr, #cq-root .cq-pickttl, #cq-root .cq-fslbl{ color:var(--bm-ink2) !important; }
-#cq-root .cq-chip.on, #cq-root .cq-folderbar > span:first-child,
-#cq-root .cq-fset, #cq-root .cq-packtab.on{ color:var(--bm-ink) !important; }
-#cq-root .cq-packtab, #cq-root .cq-chip-add, #cq-root .cq-swhint,
-#cq-root .cq-srcwho, #cq-root .cq-msgwho, #cq-root .cq-msgcar{ color:var(--bm-ink3) !important; }
-#cq-root input, #cq-root textarea, #cq-root select{ color:var(--bm-ink) !important; }
-/* и фон плашки/карточек тоже фиксируем — тема не должна его перекрашивать */
-#cq-root .cq-pop{ background-color:var(--bm-paper) !important; }
-#cq-root .cq-item{ background-color:var(--bm-card) !important; }
+/* ══════════ ЖЁСТКАЯ ФИКСАЦИЯ ══════════
+   Тема SillyTavern грузится ПОСЛЕ нас, поэтому при равном весе побеждала она
+   (в частности пробивалось её белое свечение text-shadow — от него текст и «плыл»).
+   Дублируем id в селекторе: специфичность выше любого одиночного #id темы. */
+#cq-root#cq-root, #cq-root#cq-root *{
+  color:var(--bm-ink) !important;
+  text-shadow:none !important;
+  opacity:1 !important;
+  filter:none !important;
+  -webkit-text-stroke:0 !important;
+}
+#cq-root#cq-root .cq-quote{ color:var(--bm-ink) !important; }
+#cq-root#cq-root .cq-note, #cq-root#cq-root .cq-note-ta{ color:var(--bm-pen) !important; }
+#cq-root#cq-root .cq-hdr-label{ color:var(--bm-ink) !important; }
+#cq-root#cq-root .cq-chip, #cq-root#cq-root .cq-tools button, #cq-root#cq-root .cq-mv,
+#cq-root#cq-root .cq-empty, #cq-root#cq-root .cq-msgprev, #cq-root#cq-root .cq-mv-l,
+#cq-root#cq-root .cq-srchdr, #cq-root#cq-root .cq-pickttl, #cq-root#cq-root .cq-fslbl{ color:var(--bm-ink2) !important; }
+#cq-root#cq-root .cq-chip.on, #cq-root#cq-root .cq-folderbar > span:first-child,
+#cq-root#cq-root .cq-fset, #cq-root#cq-root .cq-packtab.on{ color:var(--bm-ink) !important; }
+#cq-root#cq-root .cq-packtab, #cq-root#cq-root .cq-chip-add, #cq-root#cq-root .cq-swhint,
+#cq-root#cq-root .cq-srcwho, #cq-root#cq-root .cq-msgwho, #cq-root#cq-root .cq-msgcar{ color:var(--bm-ink3) !important; }
+#cq-root#cq-root input, #cq-root#cq-root textarea, #cq-root#cq-root select{ color:var(--bm-ink) !important; }
+#cq-root#cq-root .cq-pop{ background-color:var(--bm-paper) !important; }
+#cq-root#cq-root .cq-item{ background-color:var(--bm-card) !important; }
+/* подсветка в сообщениях тоже не должна светиться чужой тенью */
+#chat .cq-on, #chat .cq-draft{ text-shadow:none !important; }
+
+/* стекло: папки и поля полупрозрачные, иначе плашка «дырявая» только местами */
+#cq-root.cq-glass .cq-chip, #cq-root.cq-glass .cq-folderbar,
+#cq-root.cq-glass .cq-fbox, #cq-root.cq-glass .cq-modebtn{ backdrop-filter:blur(6px); }
