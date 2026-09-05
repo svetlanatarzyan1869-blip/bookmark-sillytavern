@@ -203,7 +203,7 @@ function wireList() {
     }));
     q('.cq-src').forEach(b => b.addEventListener('click', ev => {
         ev.stopPropagation(); const e = byId(b.dataset.id); if (!e) return;
-        if (jumpTo(e)) root.classList.remove('open');
+        if (jumpTo(e)) setOpen(false);
     }));
     q('.cq-note-btn').forEach(b => b.addEventListener('click', ev => {
         ev.stopPropagation(); notingId = String(notingId) === b.dataset.id ? null : b.dataset.id; draw();
@@ -272,7 +272,7 @@ function addSettingsPanel() {
     <div class="bookmark-settings">
       <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-          <b>bookmark⋆⭒˚.⋆</b> <small style="opacity:.6">v2.1.0</small><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+          <b>bookmark⋆⭒˚.⋆</b> <small style="opacity:.6">v2.2.0</small><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
           <label class="checkbox_label"><input id="bm_doodle" type="checkbox" ${s.doodle ? 'checked' : ''}><span>Каракули на плашке</span></label>
@@ -285,6 +285,7 @@ function addSettingsPanel() {
           <select id="bm_bg" class="text_pole"><option value="paper">бумага</option><option value="plain">однотонный</option></select>
           <div class="flex-container" style="margin-top:6px">
             <input id="bm_reset_pos" class="menu_button" type="button" value="Вернуть плашку на место">
+            <input id="bm_open" class="menu_button" type="button" value="Открыть сборник">
           </div>
           <small>Двойной тап по фразе в сообщении — выписать. Метки по краям тянут границы.</small>
         </div>
@@ -300,8 +301,98 @@ function addSettingsPanel() {
         for (const el of [root.querySelector('.cq-fab'), pop]) {
             el.style.left = ''; el.style.top = ''; el.style.right = ''; el.style.bottom = '';
         }
+        guard();
         toast('Плашка возвращена на место', 'success');
     });
+    // запасной вход, если жетон почему-то не виден
+    $('#bm_open').on('click', function () { guard(); setOpen(true); });
+}
+
+/* ══════════ ЖЕТОН ОБЯЗАН БЫТЬ ВИДЕН ══════════
+   У части людей плавающий жетон не появлялся, хотя выписка прямо в сообщении работала —
+   значит скрипт отрабатывал полностью, а до экрана доходило не всё. Причина может быть
+   любой: таблица стилей не доехала, чужая тема перекрыла, сохранённое положение оказалось
+   за краем окна. Поэтому не гадаем, а проверяем результат и чиним на месте. */
+let cssBroken = false;
+
+function setOpen(on) {
+    root.classList.toggle('open', on);
+    // без нашей таблицы правило «.open .cq-pop{display:block}» не сработает — показываем руками
+    if (cssBroken) pop.style.display = on ? 'block' : 'none';
+    if (on) {
+        draw();
+        // размеры известны только у видимого элемента — правим положение уже после показа
+        requestAnimationFrame(() => { clampIntoView(pop); setTimeout(() => clampIntoView(pop), 60); });
+    }
+}
+
+/* голый минимум: жетон и плашка остаются видимыми даже совсем без style.css */
+const BARE_FAB = {
+    position: 'fixed', right: '14px', bottom: '150px', width: '44px', height: '44px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', lineHeight: '1',
+    background: '#f7f0e8', color: '#382f26', border: '1px solid #c8b0a0', borderRadius: '3px',
+    boxShadow: '0 4px 13px rgba(0,0,0,.35)', zIndex: '2147483000', cursor: 'pointer',
+};
+const BARE_POP = {
+    position: 'fixed', right: '12px', bottom: '200px', width: 'min(325px, calc(100vw - 28px))',
+    boxSizing: 'border-box', maxHeight: '62vh', overflow: 'auto', padding: '11px 10px 10px',
+    background: '#ece0d4', color: '#382f26', border: '1px solid #c8b0a0', borderRadius: '3px',
+    boxShadow: '0 16px 44px rgba(0,0,0,.45)', zIndex: '2147483000', display: 'none',
+};
+
+const stylesOk = () => getComputedStyle(root.querySelector('.cq-fab')).position === 'fixed';
+
+/* подключаем таблицу сами: путь берём от собственного модуля, а не угадываем имя папки
+   (у кого-то расширение лежит в third-party, у кого-то в data/<юзер>/extensions) */
+function injectCss() {
+    try {
+        if (document.querySelector('link[data-bm-css]')) return;
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = new URL('./style.css', import.meta.url).href;
+        link.dataset.bmCss = '1';
+        document.head.appendChild(link);
+    } catch (e) { console.warn('[bookmark] свой style.css подключить не вышло', e); }
+}
+
+function guard(final = false) {
+    if (!root) return;
+    if (!root.isConnected) document.body.appendChild(root);   // нас вынесли из документа — вернулись
+    const fab = root.querySelector('.cq-fab');
+    const ok = stylesOk();
+    // ST грузит css и js параллельно, так что с первого раза стилей может ещё не быть — ждём и проверяем снова
+    if (!ok && !final) { injectCss(); setTimeout(() => guard(true), 1500); return; }
+    if (!ok) {
+        cssBroken = true;
+        Object.assign(fab.style, BARE_FAB);
+        Object.assign(pop.style, BARE_POP);
+        if (root.classList.contains('open')) pop.style.display = 'block';
+    }
+    // жетон за краем экрана: чужое сохранённое положение, поворот телефона, узкое окно
+    const r = fab.getBoundingClientRect();
+    const away = !r.width || !r.height || r.right < 8 || r.bottom < 8 ||
+                 r.left > innerWidth - 8 || r.top > innerHeight - 8;
+    if (away) {
+        const st = settings(); delete st.fabPos; saveSettings();
+        fab.style.left = ''; fab.style.top = '';
+        fab.style.right = '14px'; fab.style.bottom = '150px';
+    }
+    console.log('[bookmark] жетон:', {
+        стилиНаши: ok, вернулиНаМесто: away, вДокументе: root.isConnected,
+        положение: fab.getBoundingClientRect(), классы: root.className,
+    });
+}
+
+/* пункт в «палочке» ST — вход в сборник, который не зависит ни от жетона, ни от наших стилей */
+function addWandItem() {
+    const menu = document.getElementById('extensionsMenu');
+    if (!menu || document.getElementById('bm_wand')) return;
+    const item = document.createElement('div');
+    item.id = 'bm_wand';
+    item.className = 'list-group-item flex-container flexGap5';
+    item.innerHTML = '<div class="fa-solid fa-bookmark extensionsMenuExtensionButton"></div><span>bookmark⋆⭒˚.⋆</span>';
+    item.addEventListener('click', () => setOpen(!root.classList.contains('open')));
+    menu.appendChild(item);
 }
 
 /* ── запуск ── */
@@ -319,17 +410,12 @@ function mount() {
         if (Date.now() - (fabEl.__cqMoved || 0) < 250) return;   // это было перетаскивание
         if (Date.now() - (fabEl.__cqTapped || 0) < 400) return;  // тап уже обработан
         fabEl.__cqTapped = Date.now();
-        root.classList.toggle('open');
-        if (root.classList.contains('open')) {
-            draw();
-            // размеры известны только у видимого элемента — правим положение уже после показа
-            requestAnimationFrame(() => { clampIntoView(pop); setTimeout(() => clampIntoView(pop), 60); });
-        }
+        setOpen(!root.classList.contains('open'));
         clampIntoView(root.querySelector('.cq-fab'));
     };
     fabEl.addEventListener('click', e => { e.stopPropagation(); toggle(); });
     fabEl.addEventListener('touchend', e => { e.stopPropagation(); toggle(); }, { passive: true });
-    root.querySelector('.cq-close').addEventListener('click', e => { e.stopPropagation(); root.classList.remove('open'); });
+    root.querySelector('.cq-close').addEventListener('click', e => { e.stopPropagation(); setOpen(false); });
     root.querySelector('.cq-refresh').addEventListener('click', e => { e.stopPropagation(); decorateAll(); draw(); });
     root.querySelector('.cq-theme').addEventListener('click', e => {
         e.stopPropagation();
@@ -426,10 +512,11 @@ jQuery(async () => {
     const { eventSource, event_types } = SillyTavern.getContext();
     mount();
     addSettingsPanel();
+    addWandItem();
     wire(() => { if (root.classList.contains('open')) draw(); });
 
     const redo = () => setTimeout(decorateAll, 60);
-    eventSource.on(event_types.APP_READY, redo);
+    eventSource.on(event_types.APP_READY, () => { addWandItem(); guard(); redo(); });
     eventSource.on(event_types.CHAT_CHANGED, () => { curFolder = 'all'; fsetOpen = false; redo(); });
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, id => decorateOne(document.querySelector(`#chat .mes[mesid="${id}"]`)));
     eventSource.on(event_types.USER_MESSAGE_RENDERED, id => decorateOne(document.querySelector(`#chat .mes[mesid="${id}"]`)));
@@ -439,12 +526,7 @@ jQuery(async () => {
     window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { clampAll(); relayoutFlags(); }, 200); });
     window.addEventListener('orientationchange', () => setTimeout(clampAll, 300));
     redo();
-    console.log('[bookmark] готово, v2.1.0');
-    // самодиагностика: что реально применилось к тексту
-    setTimeout(() => {
-        const q = document.querySelector('#cq-root .cq-hdr-label');
-        if (q) console.log('[bookmark] цвет заголовка:', getComputedStyle(q).color,
-                           '| фон плашки:', getComputedStyle(document.querySelector('#cq-root .cq-pop')).backgroundColor,
-                           '| классы:', document.getElementById('cq-root').className);
-    }, 800);
+    console.log('[bookmark] готово, v2.2.0');
+    // проверка «жетон на экране»: стили ST приезжают параллельно нашим, поэтому не сразу
+    setTimeout(() => { addWandItem(); guard(); }, 1500);
 });
