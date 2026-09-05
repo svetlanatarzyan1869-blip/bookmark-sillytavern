@@ -1,0 +1,553 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   bookmark⋆⭒˚.⋆ — оформление (порт из Tavo)
+   Бумага, чернила, скрепки, картонные папки, стикеры-закладки.
+   Классы прежние — это только «одежда» поверх существующей разметки.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+#cq-root{
+  --bm-img-paper:url("assets/paper.jpg");
+  --bm-img-wave:url("assets/wave.png");
+  --bm-pat-check:url("assets/pat_check.jpg");
+  --bm-pat-stripes:url("assets/pat_stripes.jpg");
+  --bm-pat-waves:url("assets/pat_waves.jpg");
+  --bm-pat-dots:url("assets/pat_dots.jpg");
+  --bm-pat-argyle:url("assets/pat_argyle.jpg");
+  --bm-img-heart:url("assets/heart.png");
+  --bm-img-star:url("assets/star.png");
+  --bm-img-bolt:url("assets/bolt.png");
+  --bm-img-quest:url("assets/quest.png");
+  --bm-img-excl:url("assets/excl.png");
+  /* слой бумаги: светлая — как есть; тёмная — затемняющая плёнка поверх той же текстуры */
+  --bm-pl:var(--bm-img-paper) center/100% 100% no-repeat;
+  --bm-lighten:linear-gradient(rgba(255,255,255,.28),rgba(255,255,255,.28));
+  --bm-paper:#ece0d4; --bm-paper2:#e1d2c3; --bm-card:#f7f0e8; --bm-card2:#f1e8de;
+  --bm-folder:#e0d0c1; --bm-folder-on:#f7f0e8;
+  --bm-edge:#c8b0a0; --bm-edge-soft:rgba(150,120,100,.32); --bm-rule:rgba(150,120,100,.20);
+  --bm-ink:#382f26; --bm-ink2:#75654f; --bm-ink3:#8d7c66;
+  --bm-accent:#a5714e;
+  --bm-shadow:0 16px 44px rgba(74,55,32,.32);
+  --bm-card-shadow:0 2px 7px rgba(84,63,38,.15);
+  --bm-tint1:rgba(196,174,137,.22);
+  --bm-field:rgba(255,255,255,.55);
+  --bm-sticker-edge:rgba(74,55,32,.20);
+  --bm-pen:#201c18;
+  --bm-chip-veil:rgba(255,255,255,.34);
+}
+/* тёмная: не зелёная, а тёмный крафт/уголь — тот же бумажный фон, просто ночной */
+#cq-root.cq-dark{
+  --bm-pl:linear-gradient(rgba(15,13,16,.945),rgba(15,13,16,.945)),var(--bm-img-paper) center/100% 100% no-repeat;
+  --bm-lighten:linear-gradient(rgba(255,255,255,.05),rgba(255,255,255,.05));
+  --bm-paper:#121013; --bm-paper2:#0d0b0e; --bm-card:#1c191e; --bm-card2:#171419;
+  --bm-folder:#2b2730; --bm-folder-on:#39333e;
+  --bm-edge:#5b5260; --bm-edge-soft:rgba(178,168,186,.22); --bm-rule:rgba(178,168,186,.16);
+  --bm-ink:#ded6ca;
+  --bm-ink2:#9c9488; --bm-ink3:#7d766c;
+  --bm-accent:#c9986e;
+  --bm-shadow:0 16px 44px rgba(0,0,0,.62);
+  --bm-card-shadow:0 2px 8px rgba(0,0,0,.42);
+  --bm-tint1:rgba(200,192,205,.09);
+  --bm-field:rgba(255,255,255,.06);
+  --bm-sticker-edge:rgba(0,0,0,.42);
+  --bm-pen:#efe7d6;
+  --bm-chip-veil:rgba(14,12,16,.62);
+}
+#cq-root.cq-glass{--bm-pl:none;--bm-lighten:none;}
+/* однотонный фон вместо бумаги (кнопка ▤ в шапке) */
+#cq-root.cq-bg-plain{--bm-pl:none;--bm-lighten:none;}
+#cq-root.cq-bg-plain.cq-light{
+  --bm-paper:#faf7f3; --bm-paper2:#efe9e2; --bm-card:#fffdfb; --bm-card2:#f7f3ee;
+  --bm-folder:#eee7df; --bm-folder-on:#fffdfb;
+  --bm-edge:#d8ccc0; --bm-edge-soft:rgba(150,130,112,.26); --bm-rule:rgba(150,130,112,.18);
+  --bm-ink:#3a332c; --bm-ink2:#7d7266; --bm-ink3:#9a9086;
+}
+#cq-root.cq-glass .cq-pop{-webkit-backdrop-filter:blur(22px) saturate(150%);backdrop-filter:blur(22px) saturate(150%);}
+#cq-root.cq-glass.cq-base-light{
+  --bm-paper:rgba(242,234,224,.42); --bm-paper2:rgba(230,218,204,.50);
+  --bm-card:rgba(252,247,240,.55); --bm-card2:rgba(246,239,230,.48);
+  --bm-folder:rgba(216,200,168,.9); --bm-folder-on:rgba(250,245,234,.94);
+  --bm-edge:rgba(150,124,86,.55); --bm-edge-soft:rgba(146,118,80,.34);
+  --bm-ink:#3d342b; --bm-ink2:#7a6c58; --bm-ink3:#8f8474; --bm-pen:#201c18; --bm-chip-veil:rgba(255,255,255,.34);
+  --bm-field:rgba(255,255,255,.5);
+}
+#cq-root.cq-glass.cq-base-dark{
+  --bm-paper:rgba(18,16,20,.45); --bm-paper2:rgba(12,10,14,.55);
+  --bm-card:rgba(30,27,33,.55); --bm-card2:rgba(24,21,27,.48);
+  --bm-folder:rgba(52,47,58,.9); --bm-folder-on:rgba(68,61,74,.94);
+  --bm-edge:rgba(168,158,180,.42); --bm-edge-soft:rgba(178,168,186,.24);
+  --bm-ink:#e6ded2; --bm-ink2:#a49b8e; --bm-ink3:#867e73; --bm-pen:#efe7d6; --bm-chip-veil:rgba(14,12,16,.58);
+  --bm-field:rgba(255,255,255,.08);
+}
+
+/* ── жетон: стопка бумаги со стикером ── */
+#cq-root .cq-fab{
+  position:fixed;right:14px;bottom:150px;width:42px;height:42px;z-index:2147483000;
+  display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;
+  cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+  border:1px solid var(--bm-edge);border-radius:3px;
+  background:var(--bm-lighten),var(--bm-pl);background-color:var(--bm-card);
+  box-shadow:0 4px 13px rgba(74,55,32,.32), 2px 2px 0 -1px var(--bm-card2), 4px 4px 0 -2px var(--bm-paper2);
+  transform:rotate(-2deg);transition:transform .18s;
+}
+#cq-root .cq-fab::before{
+  content:'';position:absolute;right:9px;top:-5px;width:15px;height:10px;border-radius:2px 2px 1px 1px;
+  background:#d79a9a;box-shadow:0 1px 2px var(--bm-sticker-edge);
+}
+#cq-root .cq-fab:hover{transform:rotate(-2deg) translateY(-2px);}
+#cq-root .cq-fab:active{cursor:grabbing;}
+
+/* ── плашка: лист бумаги ── */
+#cq-root .cq-pop{
+  position:fixed;right:12px;left:auto;bottom:200px;width:min(325px,calc(100vw - 28px));
+  box-sizing:border-box;max-height:62vh;overflow:auto;z-index:2147483000;display:none;
+  padding:11px 10px 10px;border-radius:3px;border:1px solid var(--bm-edge);
+  background:var(--bm-pl);background-color:var(--bm-paper);
+  box-shadow:var(--bm-shadow);
+  animation:cq-pop-in .2s ease;
+}
+#cq-root.open .cq-pop{display:block;}
+@keyframes cq-pop-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+#cq-root .cq-pop-head{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin-bottom:11px;padding:0 2px 9px;border-bottom:1px solid var(--bm-rule);
+}
+#cq-root .cq-hdr-label{
+  font-family:'Cormorant Garamond',Georgia,serif;font-size:13px;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--bm-ink);
+}
+#cq-root .cq-tools{display:flex;align-items:center;gap:1px;}
+#cq-root .cq-tools button{
+  background:none;border:none;color:var(--bm-ink2);font-size:11.5px;cursor:pointer;
+  padding:3px 5px;border-radius:3px;transition:background .15s,color .15s;
+}
+#cq-root .cq-tools button:hover{background:var(--bm-tint1);color:var(--bm-ink);}
+#cq-root .cq-refresh.spin{animation:cq-spin .9s linear infinite;}
+@keyframes cq-spin{to{transform:rotate(360deg);}}
+
+/* ── кнопка «выписать» ── */
+#cq-root .cq-modebtn{
+  display:block;width:100%;box-sizing:border-box;margin:0 0 11px;
+  font-family:'PT Serif',Georgia,serif;font-size:10.5px;font-weight:600;letter-spacing:.02em;
+  color:var(--bm-ink);background:var(--bm-lighten),var(--bm-pl);background-color:var(--bm-card);
+  border:1px solid var(--bm-edge);border-radius:2px;padding:9px 12px;cursor:pointer;
+  box-shadow:var(--bm-card-shadow);transition:transform .15s,box-shadow .15s;
+}
+#cq-root .cq-modebtn:hover{transform:translateY(-1px);box-shadow:0 5px 13px rgba(84,63,38,.22);}
+#cq-root .cq-modebtn.on{background:var(--bm-pl);background-color:var(--bm-paper2);}
+
+/* ── ПАПКИ: маленькие картонные папочки с язычком ── */
+#cq-root .cq-chips{display:flex;gap:5px;flex-wrap:wrap;margin:11px 0 12px;align-items:flex-end;}
+#cq-root .cq-chip{
+  position:relative;display:inline-flex;align-items:center;gap:5px;margin-top:9px;
+  font-family:'PT Serif',Georgia,serif;font-size:9.5px;color:var(--bm-ink2);
+  background-color:var(--bm-fc,var(--bm-folder));border:1px solid var(--bm-edge-soft);
+  border-radius:0 4px 3px 3px;padding:6px 10px 5px;
+  cursor:pointer;white-space:nowrap;transition:all .15s;
+  box-shadow:0 1px 3px rgba(84,63,38,.16);
+}
+/* язычок папки */
+#cq-root .cq-chip::before{
+  content:'';position:absolute;left:-1px;top:-10px;width:45%;min-width:26px;height:10px;
+  background-color:var(--bm-fc,var(--bm-folder));border:1px solid var(--bm-edge-soft);border-bottom:none;
+  border-radius:3px 7px 0 0;
+}
+#cq-root .cq-chip:hover{color:var(--bm-ink);}
+#cq-root .cq-chip.on{color:var(--bm-ink);font-weight:600;box-shadow:0 2px 7px rgba(84,63,38,.24);}
+#cq-root .cq-chip.on::before{box-shadow:0 -1px 3px rgba(84,63,38,.2);}
+#cq-root .cq-chip-add{border-style:dashed;color:var(--bm-ink3);}
+#cq-root .cq-chip-add::before{border-style:dashed;border-bottom:none;}
+
+/* стикер-закладка вместо кружка */
+#cq-root .cq-dot{
+  display:inline-block;width:13px;height:9px;border-radius:1px;flex:none;
+  box-shadow:0 1px 2px var(--bm-sticker-edge);transform:rotate(-4deg);
+}
+
+/* ── шапка папки ── */
+#cq-root .cq-folderbar{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin:0 0 9px;padding:7px 10px;background:var(--bm-folder);
+  border:1px solid var(--bm-edge-soft);border-radius:0 3px 3px 3px;
+}
+#cq-root .cq-folderbar > span:first-child{
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:'Cormorant Garamond',Georgia,serif;font-size:11.5px;color:var(--bm-ink);letter-spacing:.03em;
+}
+#cq-root .cq-fbtools{display:flex;gap:2px;}
+#cq-root .cq-fbtools button{background:none;border:none;font-size:11px;cursor:pointer;opacity:.6;padding:3px 5px;border-radius:3px;}
+#cq-root .cq-fbtools button:hover{opacity:1;background:var(--bm-tint1);}
+
+/* ── паки цветов ── */
+#cq-root .cq-packtabs{display:flex;gap:4px;margin:0 0 8px;}
+#cq-root .cq-packtab{
+  font-family:'PT Serif',Georgia,serif;font-size:8.5px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--bm-ink3);background:none;border:none;border-bottom:1px solid transparent;
+  padding:3px 5px;cursor:pointer;transition:color .15s,border-color .15s;
+}
+#cq-root .cq-packtab:hover{color:var(--bm-ink);}
+#cq-root .cq-packtab.on{color:var(--bm-ink);border-bottom-color:var(--bm-accent);}
+
+/* ── ОБРАЗЦЫ ЦВЕТА = бумажные стикеры-закладки ── */
+#cq-root .cq-swatches{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;padding:5px 2px 9px;}
+#cq-root .cq-sw{
+  position:relative;width:34px;height:23px;border:none;border-radius:2px 2px 3px 3px;
+  cursor:pointer;padding:0;
+  box-shadow:0 2px 5px rgba(74,55,32,.26), inset 0 -6px 8px -6px rgba(0,0,0,.22);
+  transition:transform .16s, box-shadow .16s;
+}
+#cq-root .cq-sw:nth-child(odd){transform:rotate(-3deg);}
+#cq-root .cq-sw:nth-child(even){transform:rotate(2.5deg);}
+#cq-root .cq-sw:hover{transform:translateY(-3px) rotate(0deg);box-shadow:0 5px 11px rgba(74,55,32,.3);}
+#cq-root .cq-sw.on{
+  transform:translateY(-4px) rotate(0deg);
+  box-shadow:0 6px 12px rgba(74,55,32,.34), 0 0 0 2px var(--bm-paper), 0 0 0 3px var(--bm-ink);
+}
+#cq-root .cq-sw::after{
+  content:'';position:absolute;right:0;bottom:0;border-width:0 0 7px 7px;border-style:solid;
+  border-color:transparent transparent rgba(255,255,255,.42) transparent;
+}
+
+/* ── карточка цитаты: лист со стикером ── */
+#cq-root .cq-item{
+  position:relative;margin:16px 0 11px;padding:12px 12px 8px;
+  background:var(--bm-lighten),var(--bm-pl);background-color:var(--bm-card);border:1px solid var(--bm-edge-soft);border-radius:2px;
+  box-shadow:var(--bm-card-shadow);
+}
+#cq-root .cq-item.cq-t1,#cq-root .cq-item.cq-t3{background:var(--bm-pl);background-color:var(--bm-card2);}
+#cq-root .cq-item.cq-col::before{
+  content:'';position:absolute;left:12px;top:-8px;width:40px;height:14px;
+  background:var(--bm-c,#d79a9a);border-radius:2px 2px 0 0;
+  box-shadow:0 -1px 3px var(--bm-sticker-edge);
+}
+#cq-root .cq-quote{
+  font-family:'Cormorant Garamond',Georgia,serif;font-size:12px;font-style:italic;
+  line-height:1.55;color:var(--bm-ink);
+}
+/* заметка юзера — как написанная ручкой */
+#cq-root .cq-note{
+  margin-top:7px;padding-top:7px;border-top:1px dashed var(--bm-rule);
+  font-family:'Bradley Hand','Snell Roundhand','Segoe Script','Comic Sans MS',cursive;
+  font-size:13.5px;line-height:1.4;color:var(--bm-pen);
+  transform:rotate(-.5deg);transform-origin:left center;
+}
+#cq-root .cq-item-tools{display:flex;gap:1px;margin-top:8px;justify-content:flex-end;}
+#cq-root .cq-item-tools button{
+  background:none;border:none;font-size:10.5px;cursor:pointer;opacity:.5;
+  padding:4px 5px;border-radius:3px;transition:opacity .15s,background .15s;
+}
+#cq-root .cq-item-tools button:hover{opacity:1;background:var(--bm-tint1);}
+#cq-root .cq-item.cq-flash{animation:cq-flash 1.1s ease;}
+@keyframes cq-flash{0%,100%{box-shadow:var(--bm-card-shadow);}35%{box-shadow:0 0 0 3px var(--bm-accent),var(--bm-card-shadow);}}
+
+/* ── заметка ── */
+#cq-root .cq-notebox{margin-top:8px;}
+#cq-root .cq-note-ta{
+  width:100%;box-sizing:border-box;min-height:54px;resize:vertical;
+  font-family:'Bradley Hand','Snell Roundhand','Segoe Script','Comic Sans MS',cursive;
+  font-size:15px;line-height:1.45;color:var(--bm-pen);
+  background:var(--bm-field);border:1px solid var(--bm-edge-soft);border-radius:2px;padding:7px 9px;outline:none;
+}
+#cq-root .cq-note-row{display:flex;gap:6px;margin-top:6px;}
+#cq-root .cq-note-save,#cq-root .cq-note-cancel{
+  font-family:'PT Serif',Georgia,serif;font-size:10.5px;color:var(--bm-ink);
+  background:var(--bm-card2);border:1px solid var(--bm-edge-soft);border-radius:2px;
+  padding:6px 11px;cursor:pointer;
+}
+#cq-root .cq-note-save{font-weight:600;}
+#cq-root .cq-note-save:hover,#cq-root .cq-note-cancel:hover{background:var(--bm-paper2);}
+
+/* ── перемещение в папку ── */
+#cq-root .cq-movebar{
+  display:flex;flex-wrap:wrap;gap:5px;align-items:center;
+  margin-top:8px;padding-top:8px;border-top:1px dashed var(--bm-rule);
+}
+#cq-root .cq-mv-l{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:11px;color:var(--bm-ink2);}
+#cq-root .cq-mv{
+  font-family:'PT Serif',Georgia,serif;font-size:10px;color:var(--bm-ink2);
+  background:var(--bm-folder);border:1px solid var(--bm-edge-soft);border-radius:0 3px 3px 3px;
+  padding:4px 8px;cursor:pointer;
+}
+#cq-root .cq-mv:hover{color:var(--bm-ink);}
+#cq-root .cq-mv.cur{border-color:var(--bm-accent);color:var(--bm-ink);font-weight:600;}
+#cq-root .cq-mv-new{border-style:dashed;}
+
+/* ── выпискатор ── */
+#cq-root .cq-pickhint,#cq-root .cq-pickhint2{
+  font-family:'Cormorant Garamond',Georgia,serif;font-size:11.5px;font-style:italic;
+  color:var(--bm-ink2);line-height:1.45;margin:0 2px 8px;
+}
+#cq-root .cq-pickhint2{margin:14px 2px 8px;}
+#cq-root .cq-pastebox{border:1px solid var(--bm-edge-soft);border-radius:2px;padding:9px;background:var(--bm-pl);background-color:var(--bm-card2);}
+#cq-root .cq-pastein{
+  width:100%;box-sizing:border-box;min-height:48px;resize:vertical;
+  font-family:'PT Serif',Georgia,serif;font-size:11.5px;line-height:1.5;color:var(--bm-ink);
+  background:var(--bm-field);border:1px solid var(--bm-edge-soft);border-radius:2px;padding:7px 9px;outline:none;
+}
+#cq-root .cq-paste-row{display:flex;gap:6px;margin-top:7px;}
+#cq-root .cq-paste-clip,#cq-root .cq-paste-save{
+  font-family:'PT Serif',Georgia,serif;font-size:11px;color:var(--bm-ink);
+  background:var(--bm-card);border:1px solid var(--bm-edge);border-radius:2px;padding:6px 11px;cursor:pointer;
+}
+#cq-root .cq-paste-save{flex:1;font-weight:600;}
+#cq-root .cq-paste-clip:hover,#cq-root .cq-paste-save:hover{background:var(--bm-paper2);}
+
+#cq-root .cq-msgrow{
+  border:1px solid var(--bm-edge-soft);border-radius:2px;margin-bottom:7px;overflow:hidden;
+  background:var(--bm-pl);background-color:var(--bm-card2);box-shadow:var(--bm-card-shadow);
+}
+#cq-root .cq-msghead{display:flex;align-items:center;gap:7px;padding:8px 10px;cursor:pointer;}
+#cq-root .cq-msghead .cq-msgwho{
+  font-family:'Cormorant Garamond',Georgia,serif;font-size:10.5px;font-style:italic;
+  color:var(--bm-ink3);flex:0 0 auto;
+}
+#cq-root .cq-msgprev{
+  flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-family:'PT Serif',Georgia,serif;font-size:10.5px;color:var(--bm-ink2);
+}
+#cq-root .cq-msgcar{flex:0 0 auto;color:var(--bm-ink3);font-size:10px;}
+#cq-root .cq-msgrow.open{background:var(--bm-lighten),var(--bm-pl);background-color:var(--bm-card);}
+#cq-root .cq-sents{display:flex;flex-wrap:wrap;gap:5px;padding:0 10px 10px;}
+#cq-root .cq-sent{
+  display:inline;font-family:'PT Serif',Georgia,serif;font-size:10.5px;line-height:1.75;
+  color:var(--bm-ink);background:var(--bm-tint1);border:1px solid var(--bm-edge-soft);
+  border-radius:2px;padding:2px 6px;cursor:pointer;transition:background .15s;
+}
+#cq-root .cq-sent:hover{background:var(--bm-paper2);}
+#cq-root .cq-sent.on{background:rgba(224,191,126,.55);border-color:var(--bm-edge);font-weight:600;}
+
+/* ── источник цитаты ── */
+#cq-root .cq-srchdr{
+  display:flex;align-items:center;gap:9px;margin-bottom:9px;padding-bottom:8px;
+  border-bottom:1px solid var(--bm-rule);
+  font-family:'Cormorant Garamond',Georgia,serif;font-size:12.5px;font-style:italic;color:var(--bm-ink2);
+}
+#cq-root .cq-src-back{
+  font-family:'PT Serif',Georgia,serif;font-size:10.5px;color:var(--bm-ink);
+  background:var(--bm-card2);border:1px solid var(--bm-edge-soft);border-radius:2px;padding:5px 9px;cursor:pointer;
+}
+#cq-root .cq-srcwho{
+  font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:12px;
+  color:var(--bm-ink3);margin-bottom:6px;
+}
+#cq-root .cq-srctext{
+  font-family:'PT Serif',Georgia,serif;font-size:11px;line-height:1.65;color:var(--bm-ink);
+  background:var(--bm-lighten),var(--bm-pl);background-color:var(--bm-card);border:1px solid var(--bm-edge-soft);border-radius:2px;
+  padding:11px;box-shadow:var(--bm-card-shadow);
+}
+#cq-root .cq-srcmark{border-radius:1px;padding:1px 2px;color:inherit;}
+
+/* ── пусто ── */
+#cq-root .cq-empty{
+  font-family:'Cormorant Garamond',Georgia,serif;font-size:11.5px;font-style:italic;
+  color:var(--bm-ink2);line-height:1.65;text-align:center;padding:24px 14px;
+}
+#cq-root .cq-empty b{color:var(--bm-ink);font-weight:600;font-style:normal;}
+#cq-root .cq-empty small{font-size:10.5px;font-style:normal;color:var(--bm-ink3);}
+
+/* ── баннер режима ── */
+#cq-root .cq-mode{
+  position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:2147483600;
+  display:flex;align-items:center;gap:10px;max-width:calc(100vw - 24px);
+  padding:8px 9px 8px 14px;border-radius:3px;border:1px solid var(--bm-edge);
+  background:var(--bm-lighten),var(--bm-pl);background-color:var(--bm-card);box-shadow:var(--bm-shadow);
+}
+#cq-root .cq-mode-tx{
+  font-family:'PT Serif',Georgia,serif;font-size:12px;color:var(--bm-ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#cq-root .cq-mode-x{
+  flex-shrink:0;font-family:'PT Serif',Georgia,serif;font-size:11px;font-weight:600;color:var(--bm-ink);
+  background:var(--bm-paper2);border:1px solid var(--bm-edge);border-radius:2px;padding:6px 12px;cursor:pointer;
+}
+
+/* ── свои цвета ── */
+#cq-root .cq-swwrap{position:relative;display:inline-flex;}
+#cq-root .cq-swdel{
+  position:absolute;right:-5px;top:-6px;width:15px;height:15px;padding:0;line-height:13px;
+  font-family:Georgia,serif;font-size:11px;color:var(--bm-ink2);
+  background:var(--bm-card);border:1px solid var(--bm-edge-soft);border-radius:50%;
+  cursor:pointer;opacity:.75;
+}
+#cq-root .cq-swdel:hover{opacity:1;color:var(--bm-ink);}
+#cq-root .cq-swadd{
+  width:34px;height:23px;padding:0;cursor:pointer;
+  font-family:Georgia,serif;font-size:13px;color:var(--bm-ink3);
+  background:var(--bm-card2);border:1px dashed var(--bm-edge);border-radius:2px 2px 3px 3px;
+  transform:rotate(-2deg);transition:transform .16s,color .16s;
+}
+#cq-root .cq-swadd:hover{transform:translateY(-3px) rotate(0deg);color:var(--bm-ink);}
+#cq-root .cq-swhint{
+  font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:12px;
+  color:var(--bm-ink3);align-self:center;margin-right:4px;
+}
+
+/* рукописная волна под заголовком вместо линейки */
+#cq-root .cq-pop-head{position:relative;border-bottom:none;padding-bottom:13px;}
+#cq-root .cq-pop-head::after{
+  content:'';position:absolute;left:0;right:0;bottom:0;height:9px;
+  background:var(--bm-img-wave) left bottom/100% 9px no-repeat;opacity:.34;
+}
+#cq-root.cq-dark .cq-pop-head::after{filter:invert(1);opacity:.30;}
+
+/* ── мелкие каракули вразнобой по плашке ── */
+#cq-root .cq-pop::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.36;
+  background:
+    var(--bm-img-heart) 92% 6%/22px  auto no-repeat,
+    var(--bm-img-star)  5%  19%/24px auto no-repeat,
+    var(--bm-img-bolt)  95% 31%/17px auto no-repeat,
+    var(--bm-img-quest) 3%  44%/20px auto no-repeat,
+    var(--bm-img-excl)  97% 52%/9px  auto no-repeat,
+    var(--bm-img-heart) 8%  70%/17px auto no-repeat,
+    var(--bm-img-star)  90% 74%/19px auto no-repeat,
+    var(--bm-img-bolt)  33% 2%/15px  auto no-repeat,
+    var(--bm-img-quest) 66% 96%/18px auto no-repeat,
+    var(--bm-img-excl)  22% 34%/8px  auto no-repeat,
+    var(--bm-img-star)  49% 60%/14px auto no-repeat,
+    var(--bm-img-heart) 74% 42%/13px auto no-repeat,
+    var(--bm-img-bolt)  14% 92%/13px auto no-repeat,
+    var(--bm-img-star)  60% 15%/12px auto no-repeat,
+    var(--bm-img-excl)  44% 84%/7px  auto no-repeat,
+    var(--bm-img-quest) 84% 20%/14px auto no-repeat;
+}
+#cq-root.cq-dark .cq-pop::before{filter:invert(1);opacity:.30;}
+
+/* ── своя палитра (нативный input type=color в Tavo не открывается) ── */
+#cq-root .cq-swadd.on{border-style:solid;color:var(--bm-ink);background:var(--bm-paper2);}
+#cq-root .cq-picker{
+  margin:0 0 12px;padding:9px;border:1px dashed var(--bm-edge);border-radius:2px;
+  background:var(--bm-lighten),var(--bm-pl);background-color:var(--bm-card2);
+}
+#cq-root .cq-pickttl{
+  font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:11.5px;
+  color:var(--bm-ink2);margin-bottom:7px;
+}
+#cq-root .cq-pkgrid{display:grid;grid-template-columns:repeat(13,1fr);gap:4px;}
+#cq-root .cq-pk{
+  height:19px;border:none;border-radius:2px;padding:0;cursor:pointer;
+  box-shadow:0 1px 3px rgba(74,55,32,.22);transition:transform .12s;
+}
+#cq-root .cq-pk:hover{transform:translateY(-2px) scale(1.08);}
+
+/* ── узор и цвет папки ── */
+/* вуаль поверх цвета: в светлой осветляет, в тёмной притемняет — текст всегда читаем */
+#cq-root .cq-chip, #cq-root .cq-chip::before,
+#cq-root .cq-folderbar, #cq-root .cq-pat{
+  background-image:linear-gradient(var(--bm-chip-veil),var(--bm-chip-veil));
+}
+#cq-root .cq-chip[data-pat], #cq-root .cq-chip[data-pat]::before,
+#cq-root .cq-folderbar[data-pat]{
+  background-blend-mode:multiply,normal;background-repeat:repeat,no-repeat;
+  background-size:34px,auto;
+}
+#cq-root .cq-folderbar[data-pat]{background-size:40px,auto;}
+#cq-root .cq-chip[data-pat="check"], #cq-root .cq-chip[data-pat="check"]::before, #cq-root .cq-folderbar[data-pat="check"]  {background-image:var(--bm-pat-check),linear-gradient(var(--bm-chip-veil),var(--bm-chip-veil));}
+#cq-root .cq-chip[data-pat="stripes"],#cq-root .cq-folderbar[data-pat="stripes"]{background-image:var(--bm-pat-stripes),linear-gradient(var(--bm-chip-veil),var(--bm-chip-veil));}
+#cq-root .cq-chip[data-pat="waves"], #cq-root .cq-chip[data-pat="waves"]::before, #cq-root .cq-folderbar[data-pat="waves"]  {background-image:var(--bm-pat-waves),linear-gradient(var(--bm-chip-veil),var(--bm-chip-veil));}
+#cq-root .cq-chip[data-pat="dots"], #cq-root .cq-chip[data-pat="dots"]::before, #cq-root .cq-folderbar[data-pat="dots"]   {background-image:var(--bm-pat-dots),linear-gradient(var(--bm-chip-veil),var(--bm-chip-veil));}
+#cq-root .cq-chip[data-pat="argyle"], #cq-root .cq-chip[data-pat="argyle"]::before, #cq-root .cq-folderbar[data-pat="argyle"] {background-image:var(--bm-pat-argyle),linear-gradient(var(--bm-chip-veil),var(--bm-chip-veil));}
+
+/* выбор узора */
+#cq-root .cq-pats{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px;}
+#cq-root .cq-pat{
+  width:32px;height:22px;padding:0;cursor:pointer;border:1px solid var(--bm-edge-soft);
+  border-radius:0 3px 2px 2px;background-color:var(--bm-folder);
+  background-repeat:repeat,no-repeat;background-size:30px,auto;background-blend-mode:multiply,normal;
+}
+#cq-root .cq-pat.on{border-color:var(--bm-accent);box-shadow:0 0 0 2px var(--bm-paper),0 0 0 3px var(--bm-accent);}
+#cq-root .cq-pat[data-p="check"]{background-image:var(--bm-pat-check),linear-gradient(var(--bm-chip-veil),var(--bm-chip-veil));}
+#cq-root .cq-pat[data-p="stripes"]{background-image:var(--bm-pat-stripes),linear-gradient(var(--bm-chip-veil),var(--bm-chip-veil));}
+#cq-root .cq-pat[data-p="waves"]{background-image:var(--bm-pat-waves),linear-gradient(var(--bm-chip-veil),var(--bm-chip-veil));}
+#cq-root .cq-pat[data-p="dots"]{background-image:var(--bm-pat-dots),linear-gradient(var(--bm-chip-veil),var(--bm-chip-veil));}
+#cq-root .cq-pat[data-p="argyle"]{background-image:var(--bm-pat-argyle),linear-gradient(var(--bm-chip-veil),var(--bm-chip-veil));}
+
+/* ── свёрнутые настройки папки ── */
+#cq-root .cq-fset{
+  cursor:pointer;font:700 15px Georgia,serif;line-height:1;color:var(--bm-ink);
+  background:var(--bm-card);border:1px solid var(--bm-edge);border-radius:3px;
+  padding:3px 9px;transition:background .15s;
+}
+#cq-root .cq-fset:hover,#cq-root .cq-fset.on{background:var(--bm-paper2);}
+#cq-root .cq-fbox{
+  margin:0 0 11px;padding:9px 10px;border:1px dashed var(--bm-edge-soft);border-radius:2px;
+  background-color:var(--bm-card2);
+}
+#cq-root .cq-fslbl{
+  font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:11px;
+  color:var(--bm-ink3);margin:2px 0 5px;
+}
+#cq-root .cq-fsrow{display:flex;gap:6px;margin-bottom:9px;}
+#cq-root .cq-fsrow button{
+  font-family:'PT Serif',Georgia,serif;font-size:10px;color:var(--bm-ink2);
+  background:var(--bm-card);border:1px solid var(--bm-edge-soft);border-radius:2px;
+  padding:5px 9px;cursor:pointer;
+}
+#cq-root .cq-fsrow button:hover{color:var(--bm-ink);}
+
+/* ── каракули можно выключить (кнопка ✎ в шапке) ── */
+#cq-root.cq-nodoodle .cq-pop::before{display:none;}
+#cq-root.cq-nodoodle .cq-pop-head::after{display:none;}
+#cq-root.cq-nodoodle .cq-pop-head{border-bottom:1px solid var(--bm-rule);padding-bottom:9px;}
+
+/* ═══════════════ РАЗМЕТКА В ЧАТЕ (в Tavo жила внутри регекс-движка) ═══════════════ */
+#chat .cq-w, #chat .cq-g{ -webkit-tap-highlight-color:transparent; }
+#chat .cq-w{ cursor:pointer; }
+#chat .cq-on, #chat .cq-draft{ padding:2px 0; border-radius:0; }
+#chat .cq-draft{ background:rgba(224,191,126,.42); }
+
+/* закладка-треугольник у края строки */
+#chat .cq-flag{
+  position:absolute; right:1px; width:0; height:0; border-style:solid;
+  border-width:8px 10px 8px 0; z-index:8; pointer-events:none;
+  filter:drop-shadow(-1px 1px 1px rgba(0,0,0,.3));
+}
+/* метки-ручки */
+#chat .cq-h{
+  position:absolute; width:44px; margin-left:-22px; z-index:11; touch-action:none;
+  cursor:col-resize; display:none; flex-direction:column; align-items:center;
+}
+#chat .cq-h.on{ display:flex; }
+#chat .cq-knob{ width:18px;height:18px;border-radius:50%;background:#a5714e;box-shadow:0 1px 5px rgba(0,0,0,.45);margin-top:-9px;flex:none; }
+#chat .cq-stem{ flex:1;width:3px;background:#a5714e;border-radius:2px; }
+/* панель «выписать» — бумажка на скотче */
+#chat .cq-bar{
+  position:absolute; z-index:12; display:flex; flex-wrap:wrap; gap:4px; align-items:flex-end;
+  padding:11px 8px 8px; border-radius:2px; border:1px solid #c4ae89;
+  background:repeating-linear-gradient(0deg,rgba(146,118,80,.05) 0 1px,transparent 1px 4px),#f4ecdc;
+  box-shadow:0 7px 20px rgba(74,55,32,.45); font:11px Georgia,serif; max-width:94%;
+  transform:rotate(-.5deg);
+}
+#chat .cq-bar::before{
+  content:''; position:absolute; left:50%; top:-13px; width:66px; height:46px; margin-left:-33px;
+  transform:rotate(-3deg); background:url('assets/tape.png') center/contain no-repeat;
+  filter:drop-shadow(0 1px 2px rgba(74,55,32,.35));
+}
+#chat .cq-bar button{
+  font:11px Georgia,serif; padding:6px 9px; border-radius:2px;
+  border:1px solid rgba(146,118,80,.34); background:#faf4e6; color:#453b31;
+}
+#chat .cq-bar button.cq-ok{ background:#e4d8bd; border-color:#c4ae89; font-weight:700; }
+#chat .cq-chip2{
+  position:relative; display:inline-flex; align-items:center; gap:5px; margin-top:8px;
+  padding:5px 9px 4px; background:#dccbaa; border-radius:0 4px 3px 3px;
+}
+#chat .cq-chip2::before{
+  content:''; position:absolute; left:-1px; top:-8px; width:45%; min-width:22px; height:8px;
+  background:#dccbaa; border:1px solid rgba(146,118,80,.34); border-bottom:none; border-radius:3px 7px 0 0;
+}
+#chat .cq-dot2{ width:13px;height:9px;border-radius:1px;flex:none;transform:rotate(-4deg);box-shadow:0 1px 2px rgba(74,55,32,.35); }
+
+/* перетаскивание: курсор и запрет системного скролла на ручках */
+#cq-root .cq-fab{ touch-action:none; }
+#cq-root .cq-pop-head{ cursor:move; touch-action:none; }
+
+/* Тема SillyTavern может задавать свои цвета текста — фиксируем наши явно */
+#cq-root, #cq-root *{ color:inherit; }
+#cq-root{ color:var(--bm-ink); }
+#cq-root .cq-quote, #cq-root .cq-hdr-label, #cq-root .cq-empty b{ color:var(--bm-ink); }
+#cq-root .cq-note, #cq-root .cq-note-ta{ color:var(--bm-pen); }
+#cq-root .cq-chip, #cq-root .cq-tools button, #cq-root .cq-mv,
+#cq-root .cq-empty, #cq-root .cq-msgprev{ color:var(--bm-ink2); }
+#cq-root .cq-chip.on, #cq-root .cq-folderbar > span:first-child{ color:var(--bm-ink); }
+#cq-root .cq-packtab, #cq-root .cq-chip-add, #cq-root .cq-swhint{ color:var(--bm-ink3); }
+#cq-root input, #cq-root textarea, #cq-root select{ color:var(--bm-ink); }

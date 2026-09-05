@@ -1,0 +1,43 @@
+<!doctype html><meta charset="utf-8"><title>bookmark — стенд</title>
+<style>
+ body{margin:0;background:#1b1b1f;color:#ddd;font:15px/1.65 Georgia,serif;padding:20px}
+ #chat{max-width:620px}
+ .mes{background:#2a2a30;border-radius:10px;padding:14px 16px;margin-bottom:12px;position:relative}
+ .mes_text p{margin:0 0 10px}
+ h4{color:#8a8;font:12px sans-serif;letter-spacing:.1em}
+ #extensions_settings2{margin-top:24px;max-width:620px;background:#232329;padding:10px;border-radius:8px}
+</style>
+<link rel="stylesheet" href="style.css">
+<h4>СТЕНД: имитация SillyTavern</h4>
+<div id="chat">
+  <div class="mes" mesid="0"><div class="mes_text">
+    <p>Илья вернулся к рабочему месту. Натянул <em>респиратор</em>, опустил щиток.</p>
+    <p>Среда, восемнадцать ноль-ноль. Работа пошла быстрее.</p></div></div>
+  <div class="mes" mesid="1"><div class="mes_text">
+    <p>— Илюх! — крикнул отец из-под Нивы. — Дай домкрат подкатной!</p></div></div>
+</div>
+<div id="extensions_settings2"></div>
+<script>
+/* ── мини-шим jQuery (нужен только для append/val/on) ── */
+function $(sel){
+  const els = typeof sel === 'string' ? [...document.querySelectorAll(sel)] : (sel ? [sel] : []);
+  return { append:h=>{els[0]&&els[0].insertAdjacentHTML('beforeend',h);}, val:v=>{if(v===undefined)return els[0]?.value; els.forEach(e=>e.value=v);},
+           on:(ev,fn)=>els.forEach(e=>e.addEventListener(ev,function(){fn.call(e);})) };
+}
+window.$ = $; window.jQuery = fn => (typeof fn==='function' ? fn() : $(fn));
+/* ── мок SillyTavern ── */
+const listeners = {};
+const fakeMeta = {}, fakeSettings = {};
+window.SillyTavern = { getContext: () => ({
+  chat: [{mes:'msg0'},{mes:'msg1'}],
+  chatMetadata: fakeMeta,
+  extensionSettings: fakeSettings,
+  saveMetadata: async () => { console.log('[мок] saveMetadata', JSON.stringify(fakeMeta).slice(0,120)); },
+  saveSettingsDebounced: () => console.log('[мок] saveSettings'),
+  eventSource: { on:(e,f)=>{(listeners[e] ||= []).push(f);}, emit:async(e,d)=>{(listeners[e]||[]).forEach(f=>f(d));} },
+  event_types: { APP_READY:'app_ready', CHAT_CHANGED:'chat_changed', CHARACTER_MESSAGE_RENDERED:'char_rendered',
+                 USER_MESSAGE_RENDERED:'user_rendered', MESSAGE_UPDATED:'msg_updated', MESSAGE_SWIPED:'msg_swiped' },
+}) };
+window.toastr = { info:m=>console.log('toast:',m), success:m=>console.log('toast:',m), warning:m=>console.log('warn:',m) };
+</script>
+<script type="module" src="index.js"></script>
