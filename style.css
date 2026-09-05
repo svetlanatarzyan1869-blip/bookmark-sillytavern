@@ -36,8 +36,9 @@
 }
 /* тёмная: не зелёная, а тёмный крафт/уголь — тот же бумажный фон, просто ночной */
 #cq-root.cq-dark{
-  --bm-pl:linear-gradient(rgba(17,15,19,.90),rgba(17,15,19,.90)),var(--bm-img-paper-dark) center/100% 100% no-repeat;
-  --bm-lighten:linear-gradient(rgba(255,255,255,.05),rgba(255,255,255,.05));
+  /* её текстура уже тёмная и нейтральная — плёнка не нужна, кладём как есть */
+  --bm-pl:var(--bm-img-paper-dark) center/100% 100% no-repeat;
+  --bm-lighten:linear-gradient(rgba(255,255,255,.07),rgba(255,255,255,.07));
   --bm-paper:#121013; --bm-paper2:#0d0b0e; --bm-card:#1c191e; --bm-card2:#171419;
   --bm-folder:#2b2730; --bm-folder-on:#39333e;
   --bm-edge:#5b5260; --bm-edge-soft:rgba(178,168,186,.22); --bm-rule:rgba(178,168,186,.16);
