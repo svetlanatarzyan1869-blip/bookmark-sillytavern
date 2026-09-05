@@ -82,7 +82,7 @@
 
 /* ── жетон: стопка бумаги со стикером ── */
 #cq-root .cq-fab{
-  position:fixed;right:14px;bottom:150px;width:42px;height:42px;z-index:2147483000;
+  position:fixed;right:14px;bottom:150px;width:42px;height:42px;z-index:2147483647;
   display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;
   cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
   border:1px solid var(--bm-edge);border-radius:3px;
@@ -100,7 +100,7 @@
 /* ── плашка: лист бумаги ── */
 #cq-root .cq-pop{
   position:fixed;right:12px;left:auto;bottom:200px;width:min(325px,calc(100vw - 28px));
-  box-sizing:border-box;max-height:62vh;overflow:auto;z-index:2147483000;display:none;
+  box-sizing:border-box;max-height:62vh;overflow:auto;z-index:2147483647;display:none;
   padding:11px 10px 10px;border-radius:3px;border:1px solid var(--bm-edge);
   background:var(--bm-pl);background-color:var(--bm-paper);
   box-shadow:var(--bm-shadow);
@@ -612,3 +612,9 @@
 }
 #cq-root#cq-root.cq-bg-plain .cq-pop{ background:none !important; background-color:var(--bm-paper) !important; }
 #cq-root#cq-root.cq-bg-plain .cq-item{ background:none !important; background-color:var(--bm-card) !important; }
+
+/* Жетон обязан быть видимым: чужие темы прячут «лишние» элементы целыми пачками
+   (visibility/display на всё подряд), а плашку мы показываем и прячем сами. */
+#cq-root#cq-root{ display:block !important; }
+#cq-root#cq-root .cq-fab{ visibility:visible !important; display:flex !important; }
+#cq-root#cq-root.open .cq-pop{ visibility:visible !important; }

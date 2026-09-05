@@ -272,7 +272,7 @@ function addSettingsPanel() {
     <div class="bookmark-settings">
       <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-          <b>bookmark⋆⭒˚.⋆</b> <small style="opacity:.6">v2.2.0</small><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+          <b>bookmark⋆⭒˚.⋆</b> <small style="opacity:.6">v2.2.1</small><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
           <label class="checkbox_label"><input id="bm_doodle" type="checkbox" ${s.doodle ? 'checked' : ''}><span>Каракули на плашке</span></label>
@@ -331,13 +331,13 @@ const BARE_FAB = {
     position: 'fixed', right: '14px', bottom: '150px', width: '44px', height: '44px',
     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', lineHeight: '1',
     background: '#f7f0e8', color: '#382f26', border: '1px solid #c8b0a0', borderRadius: '3px',
-    boxShadow: '0 4px 13px rgba(0,0,0,.35)', zIndex: '2147483000', cursor: 'pointer',
+    boxShadow: '0 4px 13px rgba(0,0,0,.35)', zIndex: '2147483647', cursor: 'pointer',
 };
 const BARE_POP = {
     position: 'fixed', right: '12px', bottom: '200px', width: 'min(325px, calc(100vw - 28px))',
     boxSizing: 'border-box', maxHeight: '62vh', overflow: 'auto', padding: '11px 10px 10px',
     background: '#ece0d4', color: '#382f26', border: '1px solid #c8b0a0', borderRadius: '3px',
-    boxShadow: '0 16px 44px rgba(0,0,0,.45)', zIndex: '2147483000', display: 'none',
+    boxShadow: '0 16px 44px rgba(0,0,0,.45)', zIndex: '2147483647', display: 'none',
 };
 
 const stylesOk = () => getComputedStyle(root.querySelector('.cq-fab')).position === 'fixed';
@@ -377,10 +377,58 @@ function guard(final = false) {
         fab.style.left = ''; fab.style.top = '';
         fab.style.right = '14px'; fab.style.bottom = '150px';
     }
+    const covered = freeSpot(fab);
     console.log('[bookmark] жетон:', {
-        стилиНаши: ok, вернулиНаМесто: away, вДокументе: root.isConnected,
-        положение: fab.getBoundingClientRect(), классы: root.className,
+        стилиНаши: ok, вернулиНаМесто: away, ктоПерекрывал: covered,
+        вДокументе: root.isConnected, положение: fab.getBoundingClientRect(), классы: root.className,
     });
+}
+
+/* Жетон может стоять на месте и быть при этом невидимым: у людей стоят темы и другие
+   расширения, и чужая панель ложится сверху. Спрашиваем у браузера честно — кто отвечает
+   в точке жетона; если не мы, уходим на первое свободное место. */
+const SPOTS = [
+    { right: '10px', bottom: '110px' }, { right: '10px', bottom: '175px' },
+    { right: '10px', bottom: '245px' }, { right: '10px', top: '96px' },
+    { left: '10px', bottom: '175px' }, { left: '10px', top: '96px' },
+];
+const describe = el => !el ? 'ничего' : el.tagName.toLowerCase() +
+    (el.id ? '#' + el.id : '') +
+    (typeof el.className === 'string' && el.className.trim() ? '.' + el.className.trim().split(/\s+/).join('.') : '');
+
+function whoIsOnTop(fab) {
+    const r = fab.getBoundingClientRect();
+    if (!r.width || !r.height) return null;
+    const el = document.elementFromPoint(Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2));
+    return (!el || root.contains(el)) ? null : el;   // null = сверху мы, всё честно
+}
+function place(fab, spot) {
+    fab.style.left = spot.left ?? 'auto'; fab.style.right = spot.right ?? 'auto';
+    fab.style.top = spot.top ?? 'auto'; fab.style.bottom = spot.bottom ?? 'auto';
+}
+function freeSpot(fab) {
+    let over = whoIsOnTop(fab);
+    if (!over) return null;
+    const first = describe(over);
+    // сначала просто становимся последними в документе: при равном z-index побеждает тот, кто ниже
+    document.body.appendChild(root);
+    fab.style.zIndex = '2147483647';
+    over = whoIsOnTop(fab);
+    if (!over) return first + ' (подвинулись выше)';
+    // не помогло — ищем угол, где нас никто не накрывает
+    const back = { left: fab.style.left, right: fab.style.right, top: fab.style.top, bottom: fab.style.bottom };
+    for (const spot of SPOTS) {
+        place(fab, spot);
+        if (!whoIsOnTop(fab)) {
+            const st = settings();
+            const rc = fab.getBoundingClientRect();
+            st.fabPos = { left: Math.round(rc.left), top: Math.round(rc.top), vw: innerWidth };
+            saveSettings();
+            return first + ' (переехали на свободное место)';
+        }
+    }
+    place(fab, back);                                 // свободного места нет — оставляем как было
+    return first + ' (спрятать не дают, места нет)';
 }
 
 /* пункт в «палочке» ST — вход в сборник, который не зависит ни от жетона, ни от наших стилей */
@@ -526,7 +574,9 @@ jQuery(async () => {
     window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { clampAll(); relayoutFlags(); }, 200); });
     window.addEventListener('orientationchange', () => setTimeout(clampAll, 300));
     redo();
-    console.log('[bookmark] готово, v2.2.0');
+    console.log('[bookmark] готово, v2.2.1');
     // проверка «жетон на экране»: стили ST приезжают параллельно нашим, поэтому не сразу
     setTimeout(() => { addWandItem(); guard(); }, 1500);
+    // другие расширения дорисовывают свои панели позже нас — проверяем ещё раз, когда всё улеглось
+    setTimeout(() => guard(true), 6000);
 });
