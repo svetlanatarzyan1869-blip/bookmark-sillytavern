@@ -571,3 +571,17 @@
 /* стекло: папки и поля полупрозрачные, иначе плашка «дырявая» только местами */
 #cq-root.cq-glass .cq-chip, #cq-root.cq-glass .cq-folderbar,
 #cq-root.cq-glass .cq-fbox, #cq-root.cq-glass .cq-modebtn{ backdrop-filter:blur(6px); }
+
+/* ── телефон: жетон крупнее и с запасом от краёв, плашка почти во весь экран ── */
+@media (max-width: 700px), (pointer: coarse) {
+  #cq-root .cq-fab{ width:50px; height:50px; font-size:21px; right:10px; bottom:110px; }
+  #cq-root .cq-pop{
+    width:min(360px, calc(100vw - 16px));
+    max-height:70vh; right:8px; left:auto; bottom:170px;
+  }
+  #cq-root .cq-fset{ padding:5px 12px; font-size:16px; }
+  #cq-root .cq-item-tools button{ font-size:14px; padding:7px 9px; }
+  #chat .cq-knob{ width:22px; height:22px; margin-top:-11px; }
+  #chat .cq-h{ width:52px; margin-left:-26px; }
+  #chat .cq-bar button{ padding:8px 11px; font-size:12px; }
+}

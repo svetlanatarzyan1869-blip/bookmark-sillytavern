@@ -272,7 +272,7 @@ function addSettingsPanel() {
     <div class="bookmark-settings">
       <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-          <b>bookmark⋆⭒˚.⋆</b> <small style="opacity:.6">v2.0.4</small><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+          <b>bookmark⋆⭒˚.⋆</b> <small style="opacity:.6">v2.0.5</small><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
           <label class="checkbox_label"><input id="bm_doodle" type="checkbox" ${s.doodle ? 'checked' : ''}><span>Каракули на плашке</span></label>
@@ -304,12 +304,17 @@ function mount() {
     pop = root.querySelector('.cq-pop');
     out = root.querySelector('.cq-out');
 
-    root.querySelector('.cq-fab').addEventListener('click', e => {
-        e.stopPropagation();
-        if (Date.now() - (e.currentTarget.__cqMoved || 0) < 250) return;   // это было перетаскивание
+    const fabEl = root.querySelector('.cq-fab');
+    const toggle = () => {
+        if (Date.now() - (fabEl.__cqMoved || 0) < 250) return;   // это было перетаскивание
+        if (Date.now() - (fabEl.__cqTapped || 0) < 400) return;  // тап уже обработан
+        fabEl.__cqTapped = Date.now();
+        clampAll();
         root.classList.toggle('open');
         if (root.classList.contains('open')) draw();
-    });
+    };
+    fabEl.addEventListener('click', e => { e.stopPropagation(); toggle(); });
+    fabEl.addEventListener('touchend', e => { e.stopPropagation(); toggle(); }, { passive: true });
     root.querySelector('.cq-close').addEventListener('click', e => { e.stopPropagation(); root.classList.remove('open'); });
     root.querySelector('.cq-refresh').addEventListener('click', e => { e.stopPropagation(); decorateAll(); draw(); });
     root.querySelector('.cq-theme').addEventListener('click', e => {
@@ -333,10 +338,24 @@ function mount() {
 /* ── перетаскивание: элемент двигается за пальцем/мышью, позиция запоминается ── */
 function restorePos(el, key) {
     const p = settings()[key];
-    if (p && typeof p.left === 'number') {
-        el.style.left = p.left + 'px'; el.style.top = p.top + 'px';
-        el.style.right = 'auto'; el.style.bottom = 'auto';
-    }
+    if (!p || typeof p.left !== 'number') return;
+    el.style.left = p.left + 'px'; el.style.top = p.top + 'px';
+    el.style.right = 'auto'; el.style.bottom = 'auto';
+    clampIntoView(el);
+}
+/* позиция общая для всех устройств: то, что удобно на компьютере,
+   на телефоне запросто оказывается за краем — поэтому всегда подтягиваем внутрь */
+function clampIntoView(el) {
+    if (!el || el.style.left === '') return;
+    const w = el.offsetWidth || 44, h = el.offsetHeight || 44;
+    const maxL = Math.max(2, innerWidth - w - 2), maxT = Math.max(2, innerHeight - h - 2);
+    const l = Math.min(Math.max(2, parseFloat(el.style.left) || 0), maxL);
+    const t = Math.min(Math.max(2, parseFloat(el.style.top) || 0), maxT);
+    el.style.left = l + 'px'; el.style.top = t + 'px';
+}
+function clampAll() {
+    clampIntoView(root.querySelector('.cq-fab'));
+    clampIntoView(pop);
 }
 function dragify(el, key, handle) {
     let sx = 0, sy = 0, ox = 0, oy = 0, moved = false, active = false, raf = 0, nx = 0, ny = 0;
@@ -351,7 +370,8 @@ function dragify(el, key, handle) {
         const r = el.getBoundingClientRect();
         sx = t.clientX; sy = t.clientY; ox = r.left; oy = r.top;
         moved = false; active = true;
-        if (e.cancelable) e.preventDefault();
+        // на touchstart НЕ гасим событие — иначе браузер не пришлёт click и по тапу ничего не откроется
+        if (!e.touches && e.cancelable) e.preventDefault();
     };
     const move = e => {
         if (!active) return;
@@ -397,9 +417,10 @@ jQuery(async () => {
     eventSource.on(event_types.MESSAGE_UPDATED, id => decorateOne(document.querySelector(`#chat .mes[mesid="${id}"]`)));
     eventSource.on(event_types.MESSAGE_SWIPED, redo);
     let rz = 0;
-    window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(relayoutFlags, 200); });
+    window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { clampAll(); relayoutFlags(); }, 200); });
+    window.addEventListener('orientationchange', () => setTimeout(clampAll, 300));
     redo();
-    console.log('[bookmark] готово, v2.0.4');
+    console.log('[bookmark] готово, v2.0.5');
     // самодиагностика: что реально применилось к тексту
     setTimeout(() => {
         const q = document.querySelector('#cq-root .cq-hdr-label');
