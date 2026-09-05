@@ -585,3 +585,16 @@
   #chat .cq-h{ width:52px; margin-left:-26px; }
   #chat .cq-bar button{ padding:8px 11px; font-size:12px; }
 }
+
+/* ══════════ ЖЁСТКАЯ ФИКСАЦИЯ В ЧАТЕ ══════════
+   Панель выписки живёт внутри сообщения, а значит попадает под правила темы ST.
+   Тот же приём, что и для плашки: дублируем id, чтобы весить больше темы. */
+#chat#chat .cq-bar, #chat#chat .cq-bar *{
+  text-shadow:none !important; opacity:1 !important; filter:none !important;
+}
+#chat#chat .cq-bar button,
+#chat#chat .cq-chip2{ color:#453b31 !important; }
+#chat#chat .cq-bar button.cq-ok{ color:#3a3128 !important; font-weight:700 !important; }
+/* сама подсветка цитаты: без чужого свечения и без перекраски текста */
+#chat#chat .cq-w, #chat#chat .cq-g{ text-shadow:none !important; }
+#chat#chat .cq-on, #chat#chat .cq-draft{ text-shadow:none !important; }
