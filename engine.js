@@ -392,9 +392,8 @@ export function wire(onChange) {
         onTap(st, wOf(e.target), e);
     }, true);
 
-    let pending = null, rafId = 0;
+    let pending = null, lastDrag = 0;
     const applyDrag = () => {
-        rafId = 0;
         if (!pending || !drag || !draft) return;
         const w = wordAtCached(pending.x, pending.y);
         pending = null;
@@ -405,7 +404,10 @@ export function wire(onChange) {
     const queue = (x, y, e) => {
         if (!drag || !draft) return;
         pending = { x, y };
-        if (!rafId) rafId = requestAnimationFrame(applyDrag);
+        // придержка по времени, а не по кадру: кадры на телефоне браузер экономит,
+        // и метка переставала ехать за пальцем
+        const now = Date.now();
+        if (now - lastDrag >= 16) { lastDrag = now; applyDrag(); }
         e.preventDefault();
     };
     document.addEventListener('mousemove', e => queue(e.clientX, e.clientY, e));

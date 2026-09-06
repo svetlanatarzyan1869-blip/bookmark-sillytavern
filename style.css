@@ -100,7 +100,9 @@
 
 /* ── плашка: лист бумаги ── */
 #cq-root .cq-pop{
-  position:fixed;right:12px;left:auto;bottom:200px;width:min(325px,calc(100vw - 28px));
+  /* положение задаёт скрипт; здесь — запасное место на случай, если он не успел:
+     не низ экрана, где у людей теснее всего, а верхняя половина у правого края */
+  position:fixed;right:12px;left:auto;top:14%;bottom:auto;width:min(325px,calc(100vw - 28px));
   box-sizing:border-box;max-height:62vh;overflow:auto;z-index:2147483647;display:none;
   padding:11px 10px 10px;border-radius:3px;border:1px solid var(--bm-edge);
   background:var(--bm-pl);background-color:var(--bm-paper);
@@ -579,7 +581,7 @@
   #cq-root .cq-fab{ width:50px; height:50px; font-size:21px; }
   #cq-root .cq-pop{
     width:min(360px, calc(100vw - 16px));
-    max-height:70vh; right:8px; left:auto; bottom:170px;
+    max-height:70vh; right:8px; left:auto; top:12%; bottom:auto;
   }
   #cq-root .cq-fset{ padding:5px 12px; font-size:16px; }
   #cq-root .cq-item-tools button{ font-size:14px; padding:7px 9px; }
@@ -628,3 +630,25 @@
 
 /* Открытую плашку тема тоже не должна прятать: показываем и прячем её мы сами. */
 #cq-root#cq-root.open .cq-pop{ display:block !important; }
+
+/* Не полагаемся на сброс хозяйской страницы: внутри нашей разметки padding и рамки
+   всегда входят в ширину, иначе в чужом окне карточки вылезают за край. */
+#cq-root, #cq-root *{ box-sizing:border-box; }
+
+/* ── сборник внутри родного окна SillyTavern ──
+   Корень переезжает в окно ST целиком, поэтому здесь снимаем с него всё «плавающее»:
+   ни фиксации, ни своих теней, ни своего крестика — окно рисует сама таверна. */
+#cq-root.cq-in-popup{ position:static !important; }
+/* id дублируем: выше по весу, чем наша же жёсткая фиксация видимости жетона */
+#cq-root#cq-root.cq-in-popup .cq-fab{ display:none !important; }
+/* окно ST открыто в «прозрачном» режиме — своей рамки и фона у него нет, поэтому
+   бумажный лист остаётся как есть, только перестаёт быть плавающим */
+#cq-root#cq-root.cq-in-popup .cq-pop{
+  position:static !important; display:block !important;
+  width:100% !important; max-width:none !important; max-height:none !important;
+  overflow:visible !important; animation:none !important;
+}
+#cq-root.cq-in-popup .cq-pop-head{ cursor:default; }
+#cq-root#cq-root.cq-in-popup .cq-close{ display:none !important; }
+/* окно ST под нашу бумагу: без своих поднятых полей и с бумажной подложкой */
+.bm-host{ width:100%; }

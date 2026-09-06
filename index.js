@@ -273,7 +273,7 @@ function addSettingsPanel() {
     <div class="bookmark-settings">
       <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-          <b>bookmark⋆⭒˚.⋆</b> <small style="opacity:.6">v2.3.1</small><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+          <b>bookmark⋆⭒˚.⋆</b> <small style="opacity:.6">v2.4.0</small><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
           <label class="checkbox_label"><input id="bm_doodle" type="checkbox" ${s.doodle ? 'checked' : ''}><span>Каракули на плашке</span></label>
@@ -317,15 +317,111 @@ function addSettingsPanel() {
    за краем окна. Поэтому не гадаем, а проверяем результат и чиним на месте. */
 let cssBroken = false;
 
+/* ══════════ СБОРНИК ПОКАЗЫВАЕТ САМА SILLYTAVERN ══════════
+   Своя плавающая плашка у части людей так и не показывалась: чужие темы и расширения
+   кладут поверх неё свои слои, и никакие z-index не помогали. Поэтому сборник теперь
+   открывается в РОДНОМ окне ST (тот же Popup, что у MemoryBooks) — его рисует сама
+   таверна в своём слое, и перекрыть его нечем. Внутрь окна переносим наш же корень,
+   так что бумажный вид, папки, темы и все обработчики остаются прежними.
+   Если попап недоступен (другая сборка ST, отладочный стенд) — работает старая плашка. */
+let stPopup = null, stPopupMod = null, inPopup = false, rescuing = false;
+
 function setOpen(on) {
-    root.classList.toggle('open', on);
-    // без нашей таблицы правило «.open .cq-pop{display:block}» не сработает — показываем руками
-    if (cssBroken) pop.style.display = on ? 'block' : 'none';
-    if (on) {
-        draw();
-        // размеры известны только у видимого элемента — правим положение уже после показа
-        requestAnimationFrame(() => { placePop(); setTimeout(placePop, 60); });
+    if (on) openPanel(); else closePanel();
+}
+
+/* Основной путь — своя плашка рядом с жетоном: чат вокруг остаётся виден,
+   плашка ездит вместе с кружком. Окно ST держим только на крайний случай. */
+function openPanel() {
+    if (inPopup) return;
+    root.classList.add('open');
+    if (cssBroken) pop.style.display = 'block';
+    draw();
+    // Ставим и проверяем СРАЗУ, а не в кадре анимации: requestAnimationFrame в фоновой
+    // вкладке и на телефоне браузер придерживает, и тогда плашка так и остаётся там, где
+    // её положил CSS. Обращение к размерам само по себе заставляет разложить вёрстку,
+    // так что мерить можно сейчас же; повторы — на случай, если вёрстка ещё доезжает.
+    rescuing = false;
+    placePop();
+    setTimeout(() => { placePop(); if (!rescuing && !popVisible()) rescuePop(); }, 90);
+    setTimeout(() => { if (!rescuing && !popVisible()) rescuePop(); }, 400);
+}
+
+function closePanel() {
+    if (inPopup) {
+        try { stPopup?.complete(stPopupMod.POPUP_RESULT.CANCELLED); }
+        catch (e) { takeRootBack(); }
+        return;
     }
+    root.classList.remove('open');
+    if (cssBroken) pop.style.display = 'none';
+}
+
+/* Видно ли плашку на самом деле — не «поставили ли мы класс», а именно видно:
+   размер, стили и кто отвечает в её точках. Иначе «открылась» и «показалась» —
+   это разные вещи, на чём мы уже обожглись. */
+function popVisible() {
+    if (!viewportKnown()) return true;             // размеров окна не знаем — не выдумываем
+    const r = pop.getBoundingClientRect();
+    if (r.width < 40 || r.height < 40) return false;
+    const cs = getComputedStyle(pop);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) < 0.1) return false;
+    const pts = [[r.left + r.width / 2, r.top + 12],
+                 [r.left + r.width / 2, r.top + r.height / 2],
+                 [r.left + 14, r.bottom - 12]];
+    return pts.some(([x, y]) => {
+        const el = document.elementFromPoint(Math.round(x), Math.round(y));
+        return el && root.contains(el);
+    });
+}
+
+/* Плашку не видно: сначала лезем выше и переставляем, и только если и это не помогло —
+   отдаём показ родному окну SillyTavern (его чужие слои не перекрывают). */
+function rescuePop() {
+    rescuing = true;
+    const over = whoIsOnTop(pop);
+    document.body.appendChild(root);
+    placePop();
+    if (popVisible()) { rescuing = false; console.log('[bookmark] плашку перекрывал', describe(over), '— поправила'); return; }
+    console.warn('[bookmark] плашку не видно, мешает', describe(over), '— открываю в окне таверны');
+    toast('Плашку перекрывает чужой слой — открыла её в окне таверны');
+    root.classList.remove('open');
+    openInStWindow();
+}
+
+/* Крайний случай: сборник показывает сама SillyTavern — тот же Popup, что у MemoryBooks.
+   Внутрь окна переносим наш корень целиком, поэтому вид и все обработчики те же. */
+async function openInStWindow() {
+    if (inPopup) return;
+    if (stPopupMod === null) {
+        try { stPopupMod = await import('../../../popup.js'); }
+        catch (e) { stPopupMod = false; console.warn('[bookmark] окно ST недоступно', e); }
+    }
+    if (!stPopupMod?.Popup) {                      // окна нет — показываем свою плашку как есть
+        root.classList.add('open');
+        if (cssBroken) pop.style.display = 'block';
+        draw(); placePop();
+        return;
+    }
+    const host = document.createElement('div');
+    host.className = 'bm-host';
+    host.appendChild(root);                        // обработчики переезжают вместе с разметкой
+    root.classList.add('cq-in-popup', 'open');
+    inPopup = true;
+    draw();
+    stPopup = new stPopupMod.Popup(host, stPopupMod.POPUP_TYPE.DISPLAY, '', {
+        transparent: true, allowVerticalScrolling: true, animation: 'fast',
+        // «после закрытия, но до уборки разметки» — самый момент забрать корень обратно
+        onClose: () => { takeRootBack(); },
+    });
+    stPopup.show();
+}
+
+function takeRootBack() {
+    inPopup = false; stPopup = null; rescuing = false;
+    root.classList.remove('cq-in-popup', 'open');
+    document.body.appendChild(root);
+    applyFabPos();
 }
 
 /* Плашка открывалась внизу справа — там же, где у людей самая теснота и чужие слои,
@@ -402,6 +498,7 @@ function ensureMounted() {
 
 function guard(final = false) {
     if (dragging) return;      // палец на экране — не двигаем и не пересобираем
+    if (inPopup) return;       // корень сейчас внутри окна ST — трогать его нельзя
     ensureMounted();
     if (!root) return;
     const fab = root.querySelector('.cq-fab');
@@ -500,18 +597,18 @@ function mount() {
     pop = root.querySelector('.cq-pop');
     out = root.querySelector('.cq-out');
 
+    // Тап по жетону разбирается ВНУТРИ логики перетаскивания (приём из Phone-ST):
+    // отдельный слушатель на touchend соревновался с обработчиком перетаскивания на
+    // документе, и палец, дрогнувший на пару пикселей, считался переносом — сборник
+    // просто не открывался. Теперь решение одно: отпустили, не сдвинув, — открываем.
     const fabEl = root.querySelector('.cq-fab');
-    const toggle = () => {
-        // метка ставится на каждом движении пальца, поэтому окно берём с запасом:
-        // палец может замереть на месте перед тем, как оторваться
-        if (Date.now() - (fabEl.__cqMoved || 0) < 600) return;   // это было перетаскивание
-        if (Date.now() - (fabEl.__cqTapped || 0) < 400) return;  // тап уже обработан
-        fabEl.__cqTapped = Date.now();
+    // клавиатура (Enter/пробел на кнопке) и программный вызов дают click без указателя —
+    // detail:0 как раз это и означает, а обычный клик мышью уже разобран в dragify
+    fabEl.addEventListener('click', e => {
+        if (e.detail !== 0) return;
+        e.stopPropagation();
         setOpen(!root.classList.contains('open'));
-        clampIntoView(root.querySelector('.cq-fab'));
-    };
-    fabEl.addEventListener('click', e => { e.stopPropagation(); toggle(); });
-    fabEl.addEventListener('touchend', e => { e.stopPropagation(); toggle(); }, { passive: true });
+    });
     root.querySelector('.cq-close').addEventListener('click', e => { e.stopPropagation(); setOpen(false); });
     root.querySelector('.cq-refresh').addEventListener('click', e => { e.stopPropagation(); decorateAll(); draw(); });
     root.querySelector('.cq-theme').addEventListener('click', e => {
@@ -525,7 +622,7 @@ function mount() {
     root.querySelector('.cq-dood').addEventListener('click', e => {
         e.stopPropagation(); const s = settings(); s.doodle = !s.doodle; saveSettings(); applyLook();
     });
-    dragify(root.querySelector('.cq-fab'), 'fabPos', root.querySelector('.cq-fab'));
+    dragify(fabEl, 'fabPos', fabEl, () => setOpen(!root.classList.contains('open')));
     dragify(pop, 'popPos', pop.querySelector('.cq-pop-head'));
     applyFabPos();
     restorePos(pop, 'popPos');
@@ -584,11 +681,13 @@ function clampAll() {
     clampIntoView(root.querySelector('.cq-fab'));
     clampIntoView(pop);
 }
-function dragify(el, key, handle) {
-    let sx = 0, sy = 0, ox = 0, oy = 0, moved = false, active = false, raf = 0, nx = 0, ny = 0;
+function dragify(el, key, handle, onTap) {
+    let sx = 0, sy = 0, ox = 0, oy = 0, moved = false, active = false, last = 0, nx = 0, ny = 0;
     const point = e => e.touches ? e.touches[0] : e;
+    // раньше сдвиг применялся в кадре анимации — на телефоне кадры придерживаются,
+    // и кружок «залипал», догоняя палец только при следующем касании. Теперь двигаем
+    // сразу, а от лишней работы спасает придержка по времени
     const apply = () => {
-        raf = 0;
         el.style.left = nx + 'px'; el.style.top = ny + 'px';
         el.style.right = 'auto'; el.style.bottom = 'auto';
     };
@@ -604,7 +703,9 @@ function dragify(el, key, handle) {
         if (!active) return;
         const t = point(e); if (!t) return;
         const dx = t.clientX - sx, dy = t.clientY - sy;
-        if (!moved && Math.abs(dx) + Math.abs(dy) < 5) return;
+        // порог как у Phone-ST: палец на маленькой кнопке всегда чуть дрожит,
+        // и слишком строгий порог превращал обычный тап в «перетаскивание»
+        if (!moved && Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
         moved = true;
         // Метку «это было перетаскивание» ставим СРАЗУ. Раньше она появлялась только в конце,
         // а touchend на самом жетоне срабатывает РАНЬШЕ, чем наш обработчик на документе, —
@@ -613,7 +714,8 @@ function dragify(el, key, handle) {
         const w = el.offsetWidth, h = el.offsetHeight;
         nx = Math.max(2, Math.min(innerWidth - w - 2, ox + dx));
         ny = Math.max(2, Math.min(innerHeight - h - 2, oy + dy));
-        if (!raf) raf = requestAnimationFrame(apply);
+        const now = Date.now();
+        if (now - last >= 16) { last = now; apply(); }
         if (e.cancelable) e.preventDefault();
     };
     const up = () => {
@@ -621,10 +723,13 @@ function dragify(el, key, handle) {
         active = false;
         setTimeout(() => { dragging = false; }, 250);
         if (moved) {
+            apply();
             const r = el.getBoundingClientRect();
             settings()[key] = { left: Math.round(r.left), top: Math.round(r.top), vw: innerWidth };
             saveSettings();
-            el.__cqMoved = Date.now();     // чтобы клик после перетаскивания не сработал
+            el.__cqMoved = Date.now();
+        } else if (onTap) {
+            onTap();                        // отпустили, не сдвинув, — это тап
         }
     };
     handle.addEventListener('mousedown', down);
@@ -657,7 +762,7 @@ jQuery(async () => {
     window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { clampAll(); relayoutFlags(); }, 200); });
     window.addEventListener('orientationchange', () => setTimeout(clampAll, 300));
     redo();
-    console.log('[bookmark] готово, v2.3.1');
+    console.log('[bookmark] готово, v2.4.0');
     // проверка «жетон на экране»: стили ST приезжают параллельно нашим, поэтому не сразу
     setTimeout(() => { addWandItem(); guard(); }, 1500);
     // другие расширения дорисовывают свои панели позже нас — проверяем ещё раз, когда всё улеглось
