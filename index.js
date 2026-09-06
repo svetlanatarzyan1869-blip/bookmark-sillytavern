@@ -17,6 +17,7 @@ const PATS = ['none', 'check', 'stripes', 'waves', 'dots', 'argyle'];
 
 let root, pop, out, curFolder = 'all', movingId = null, notingId = null;
 let fsetOpen = false, pickerOpen = false, curPackKey = 'main';
+let dragging = false;          // палец сейчас тащит жетон или плашку — не мешаем
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const preview = (s, n = 220) => { s = norm(s); return s.length > n ? s.slice(0, n) + '…' : s; };
@@ -272,7 +273,7 @@ function addSettingsPanel() {
     <div class="bookmark-settings">
       <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-          <b>bookmark⋆⭒˚.⋆</b> <small style="opacity:.6">v2.3.0</small><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+          <b>bookmark⋆⭒˚.⋆</b> <small style="opacity:.6">v2.3.1</small><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
           <label class="checkbox_label"><input id="bm_doodle" type="checkbox" ${s.doodle ? 'checked' : ''}><span>Каракули на плашке</span></label>
@@ -323,8 +324,37 @@ function setOpen(on) {
     if (on) {
         draw();
         // размеры известны только у видимого элемента — правим положение уже после показа
-        requestAnimationFrame(() => { clampIntoView(pop); setTimeout(() => clampIntoView(pop), 60); });
+        requestAnimationFrame(() => { placePop(); setTimeout(placePop, 60); });
     }
+}
+
+/* Плашка открывалась внизу справа — там же, где у людей самая теснота и чужие слои,
+   поэтому «сборник не открывался»: он открывался под чужой панелью. Теперь плашка
+   выходит рядом с жетоном (где место точно свободно — жетон-то виден) и, как и жетон,
+   проверяет, не легло ли что-то сверху. */
+function placePop() {
+    if (!viewportKnown()) return;
+    const saved = settings().popPos;
+    const w = pop.offsetWidth || 325, h = pop.offsetHeight || 320;
+    let left, top;
+    if (saved && typeof saved.left === 'number' && typeof saved.top === 'number') {
+        left = saved.left; top = saved.top;                      // человек сам поставил — уважаем
+    } else {
+        const fr = root.querySelector('.cq-fab').getBoundingClientRect();
+        left = fr.left - w - 10;                                  // слева от жетона
+        if (left < 8) left = fr.right + 10;                       // не влезла — справа
+        top = fr.top - Math.round(h * 0.35);
+    }
+    pop.style.left = Math.max(8, Math.min(left, innerWidth - w - 8)) + 'px';
+    pop.style.top = Math.max(8, Math.min(top, innerHeight - h - 8)) + 'px';
+    pop.style.right = 'auto'; pop.style.bottom = 'auto';
+    const over = whoIsOnTop(pop);
+    if (!over) return;
+    document.body.appendChild(root);                              // становимся последними
+    if (!whoIsOnTop(pop)) return;
+    console.log('[bookmark] плашку перекрывает:', describe(over), '— отодвигаю');
+    pop.style.left = Math.max(8, Math.round((innerWidth - w) / 2)) + 'px';
+    pop.style.top = Math.max(8, Math.round((innerHeight - h) / 2)) + 'px';
 }
 
 /* голый минимум: жетон и плашка остаются видимыми даже совсем без style.css */
@@ -360,7 +390,10 @@ function injectCss() {
    (тот же приём, что у «Телефона»: он пересоздаёт свой кружок, если тот пропал) */
 function ensureMounted() {
     const inDoc = document.getElementById(ROOT_ID);
-    const broken = !inDoc || inDoc !== root || !root.querySelector('.cq-fab') || !root.querySelector('.cq-pop');
+    // если в документе висит ЧУЖОЙ корень (вторая копия расширения) — это не наша забота:
+    // снести его значит устроить драку, в которой обе копии стирают разметку друг друга
+    if (inDoc && root && inDoc !== root) return;
+    const broken = !inDoc || !root || !root.querySelector('.cq-fab') || !root.querySelector('.cq-pop');
     if (!broken) return;
     inDoc?.remove();
     root = null;
@@ -368,6 +401,7 @@ function ensureMounted() {
 }
 
 function guard(final = false) {
+    if (dragging) return;      // палец на экране — не двигаем и не пересобираем
     ensureMounted();
     if (!root) return;
     const fab = root.querySelector('.cq-fab');
@@ -468,7 +502,9 @@ function mount() {
 
     const fabEl = root.querySelector('.cq-fab');
     const toggle = () => {
-        if (Date.now() - (fabEl.__cqMoved || 0) < 250) return;   // это было перетаскивание
+        // метка ставится на каждом движении пальца, поэтому окно берём с запасом:
+        // палец может замереть на месте перед тем, как оторваться
+        if (Date.now() - (fabEl.__cqMoved || 0) < 600) return;   // это было перетаскивание
         if (Date.now() - (fabEl.__cqTapped || 0) < 400) return;  // тап уже обработан
         fabEl.__cqTapped = Date.now();
         setOpen(!root.classList.contains('open'));
@@ -543,7 +579,9 @@ function clampIntoView(el) {
     el.style.left = l + 'px'; el.style.top = t + 'px';
 }
 function clampAll() {
-    applyFabPos();
+    // именно clampIntoView, а не applyFabPos: после перетаскивания жетон должен остаться
+    // там, куда его поставили, а не прыгнуть обратно на сохранённое место
+    clampIntoView(root.querySelector('.cq-fab'));
     clampIntoView(pop);
 }
 function dragify(el, key, handle) {
@@ -558,7 +596,7 @@ function dragify(el, key, handle) {
         const t = point(e); if (!t) return;
         const r = el.getBoundingClientRect();
         sx = t.clientX; sy = t.clientY; ox = r.left; oy = r.top;
-        moved = false; active = true;
+        moved = false; active = true; dragging = true;
         // на touchstart НЕ гасим событие — иначе браузер не пришлёт click и по тапу ничего не откроется
         if (!e.touches && e.cancelable) e.preventDefault();
     };
@@ -568,6 +606,10 @@ function dragify(el, key, handle) {
         const dx = t.clientX - sx, dy = t.clientY - sy;
         if (!moved && Math.abs(dx) + Math.abs(dy) < 5) return;
         moved = true;
+        // Метку «это было перетаскивание» ставим СРАЗУ. Раньше она появлялась только в конце,
+        // а touchend на самом жетоне срабатывает РАНЬШЕ, чем наш обработчик на документе, —
+        // и каждое перетаскивание заканчивалось лишним открытием-закрытием сборника.
+        el.__cqMoved = Date.now();
         const w = el.offsetWidth, h = el.offsetHeight;
         nx = Math.max(2, Math.min(innerWidth - w - 2, ox + dx));
         ny = Math.max(2, Math.min(innerHeight - h - 2, oy + dy));
@@ -577,6 +619,7 @@ function dragify(el, key, handle) {
     const up = () => {
         if (!active) return;
         active = false;
+        setTimeout(() => { dragging = false; }, 250);
         if (moved) {
             const r = el.getBoundingClientRect();
             settings()[key] = { left: Math.round(r.left), top: Math.round(r.top), vw: innerWidth };
@@ -593,6 +636,10 @@ function dragify(el, key, handle) {
 }
 
 jQuery(async () => {
+    // Расширение может оказаться установленным дважды (например, вручную и по ссылке).
+    // Вторая копия должна молча отойти в сторону, иначе две копии стирают разметку друг друга.
+    if (window.__bookmarkLoaded) { console.warn('[bookmark] уже загружено — вторая копия отключена'); return; }
+    window.__bookmarkLoaded = true;
     const { eventSource, event_types } = SillyTavern.getContext();
     mount();
     addSettingsPanel();
@@ -610,7 +657,7 @@ jQuery(async () => {
     window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { clampAll(); relayoutFlags(); }, 200); });
     window.addEventListener('orientationchange', () => setTimeout(clampAll, 300));
     redo();
-    console.log('[bookmark] готово, v2.3.0');
+    console.log('[bookmark] готово, v2.3.1');
     // проверка «жетон на экране»: стили ST приезжают параллельно нашим, поэтому не сразу
     setTimeout(() => { addWandItem(); guard(); }, 1500);
     // другие расширения дорисовывают свои панели позже нас — проверяем ещё раз, когда всё улеглось

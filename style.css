@@ -625,3 +625,6 @@
    такие поверхности местами рисует пустотой — кружок «пропадает». Плашке стекло оставляем. */
 #cq-root#cq-root.cq-glass .cq-fab{ background-image:none !important; background-color:#f7f0e8 !important; }
 #cq-root#cq-root.cq-glass.cq-base-dark .cq-fab{ background-color:#26222b !important; }
+
+/* Открытую плашку тема тоже не должна прятать: показываем и прячем её мы сами. */
+#cq-root#cq-root.open .cq-pop{ display:block !important; }
