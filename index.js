@@ -272,7 +272,7 @@ function addSettingsPanel() {
     <div class="bookmark-settings">
       <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-          <b>bookmark⋆⭒˚.⋆</b> <small style="opacity:.6">v2.2.1</small><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+          <b>bookmark⋆⭒˚.⋆</b> <small style="opacity:.6">v2.3.0</small><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
           <label class="checkbox_label"><input id="bm_doodle" type="checkbox" ${s.doodle ? 'checked' : ''}><span>Каракули на плашке</span></label>
@@ -301,6 +301,7 @@ function addSettingsPanel() {
         for (const el of [root.querySelector('.cq-fab'), pop]) {
             el.style.left = ''; el.style.top = ''; el.style.right = ''; el.style.bottom = '';
         }
+        applyFabPos();
         guard();
         toast('Плашка возвращена на место', 'success');
     });
@@ -328,7 +329,7 @@ function setOpen(on) {
 
 /* голый минимум: жетон и плашка остаются видимыми даже совсем без style.css */
 const BARE_FAB = {
-    position: 'fixed', right: '14px', bottom: '150px', width: '44px', height: '44px',
+    position: 'fixed', width: '44px', height: '44px',
     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', lineHeight: '1',
     background: '#f7f0e8', color: '#382f26', border: '1px solid #c8b0a0', borderRadius: '3px',
     boxShadow: '0 4px 13px rgba(0,0,0,.35)', zIndex: '2147483647', cursor: 'pointer',
@@ -355,9 +356,20 @@ function injectCss() {
     } catch (e) { console.warn('[bookmark] свой style.css подключить не вышло', e); }
 }
 
+/* чужой скрипт или перестройка страницы может снести нашу разметку — собираем заново
+   (тот же приём, что у «Телефона»: он пересоздаёт свой кружок, если тот пропал) */
+function ensureMounted() {
+    const inDoc = document.getElementById(ROOT_ID);
+    const broken = !inDoc || inDoc !== root || !root.querySelector('.cq-fab') || !root.querySelector('.cq-pop');
+    if (!broken) return;
+    inDoc?.remove();
+    root = null;
+    mount();
+}
+
 function guard(final = false) {
+    ensureMounted();
     if (!root) return;
-    if (!root.isConnected) document.body.appendChild(root);   // нас вынесли из документа — вернулись
     const fab = root.querySelector('.cq-fab');
     const ok = stylesOk();
     // ST грузит css и js параллельно, так что с первого раза стилей может ещё не быть — ждём и проверяем снова
@@ -370,12 +382,11 @@ function guard(final = false) {
     }
     // жетон за краем экрана: чужое сохранённое положение, поворот телефона, узкое окно
     const r = fab.getBoundingClientRect();
-    const away = !r.width || !r.height || r.right < 8 || r.bottom < 8 ||
-                 r.left > innerWidth - 8 || r.top > innerHeight - 8;
+    const away = viewportKnown() && (!r.width || !r.height || r.right < 8 || r.bottom < 8 ||
+                 r.left > innerWidth - 8 || r.top > innerHeight - 8);
     if (away) {
         const st = settings(); delete st.fabPos; saveSettings();
-        fab.style.left = ''; fab.style.top = '';
-        fab.style.right = '14px'; fab.style.bottom = '150px';
+        applyFabPos();
     }
     const covered = freeSpot(fab);
     console.log('[bookmark] жетон:', {
@@ -387,11 +398,10 @@ function guard(final = false) {
 /* Жетон может стоять на месте и быть при этом невидимым: у людей стоят темы и другие
    расширения, и чужая панель ложится сверху. Спрашиваем у браузера честно — кто отвечает
    в точке жетона; если не мы, уходим на первое свободное место. */
-const SPOTS = [
-    { right: '10px', bottom: '110px' }, { right: '10px', bottom: '175px' },
-    { right: '10px', bottom: '245px' }, { right: '10px', top: '96px' },
-    { left: '10px', bottom: '175px' }, { left: '10px', top: '96px' },
-];
+/* Доли высоты экрана, по которым ищем свободное место (сначала у правого края, потом
+   у левого). Низ экрана намеренно не трогаем: там теснее всего — панель ввода ST,
+   кнопки других расширений, полоса навигации телефона. */
+const SPOTS = [0.45, 0.30, 0.62, 0.16, 0.76];
 const describe = el => !el ? 'ничего' : el.tagName.toLowerCase() +
     (el.id ? '#' + el.id : '') +
     (typeof el.className === 'string' && el.className.trim() ? '.' + el.className.trim().split(/\s+/).join('.') : '');
@@ -402,11 +412,16 @@ function whoIsOnTop(fab) {
     const el = document.elementFromPoint(Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2));
     return (!el || root.contains(el)) ? null : el;   // null = сверху мы, всё честно
 }
-function place(fab, spot) {
-    fab.style.left = spot.left ?? 'auto'; fab.style.right = spot.right ?? 'auto';
-    fab.style.top = spot.top ?? 'auto'; fab.style.bottom = spot.bottom ?? 'auto';
+function place(fab, side, frac) {
+    const w = fab.offsetWidth || FAB_SZ, h = fab.offsetHeight || FAB_SZ;
+    const left = side === 'right' ? innerWidth - w - 14 : 14;
+    const top = Math.max(2, Math.min(Math.round(innerHeight * frac), innerHeight - h - 2));
+    fab.style.left = left + 'px'; fab.style.top = top + 'px';
+    fab.style.right = 'auto'; fab.style.bottom = 'auto';
+    return { left, top };
 }
 function freeSpot(fab) {
+    if (!viewportKnown()) return null;
     let over = whoIsOnTop(fab);
     if (!over) return null;
     const first = describe(over);
@@ -415,20 +430,18 @@ function freeSpot(fab) {
     fab.style.zIndex = '2147483647';
     over = whoIsOnTop(fab);
     if (!over) return first + ' (подвинулись выше)';
-    // не помогло — ищем угол, где нас никто не накрывает
-    const back = { left: fab.style.left, right: fab.style.right, top: fab.style.top, bottom: fab.style.bottom };
-    for (const spot of SPOTS) {
-        place(fab, spot);
+    // не помогло — идём вдоль края и ищем высоту, где нас никто не накрывает
+    const back = { left: fab.style.left, top: fab.style.top };
+    for (const side of ['right', 'left']) for (const frac of SPOTS) {
+        const p = place(fab, side, frac);
         if (!whoIsOnTop(fab)) {
-            const st = settings();
-            const rc = fab.getBoundingClientRect();
-            st.fabPos = { left: Math.round(rc.left), top: Math.round(rc.top), vw: innerWidth };
+            settings().fabPos = { left: p.left, top: p.top, vw: innerWidth };
             saveSettings();
             return first + ' (переехали на свободное место)';
         }
     }
-    place(fab, back);                                 // свободного места нет — оставляем как было
-    return first + ' (спрятать не дают, места нет)';
+    fab.style.left = back.left; fab.style.top = back.top;   // свободного места нет — оставляем как было
+    return first + ' (перекрыт целиком, свободного места нет)';
 }
 
 /* пункт в «палочке» ST — вход в сборник, который не зависит ни от жетона, ни от наших стилей */
@@ -478,9 +491,32 @@ function mount() {
     });
     dragify(root.querySelector('.cq-fab'), 'fabPos', root.querySelector('.cq-fab'));
     dragify(pop, 'popPos', pop.querySelector('.cq-pop-head'));
-    restorePos(root.querySelector('.cq-fab'), 'fabPos');
+    applyFabPos();
     restorePos(pop, 'popPos');
     applyLook();
+}
+
+/* Жетон ставим координатами прямо на элемент, как это делает «Телефон» (Phone-ST),
+   у которого кружок показывается у всех: так положение не зависит от того, чем чужая
+   тема перебила наши правые/нижние отступы, и всегда оказывается внутри экрана.
+   По умолчанию — правый край на 45% высоты: низ экрана самый тесный (поле ввода ST,
+   кнопки других расширений, полоса навигации телефона). */
+const FAB_SZ = 44;
+/* Пока страница скрыта или ещё не разложена, окно умеет отдавать нулевые размеры.
+   Считать по ним координаты нельзя — жетон улетит в угол. Лучше оставить как в CSS
+   и вернуться к этому на следующей проверке. */
+const viewportKnown = () => innerWidth > 120 && innerHeight > 120;
+function applyFabPos() {
+    const fab = root?.querySelector('.cq-fab');
+    if (!fab || !viewportKnown()) return;
+    const p = settings().fabPos;
+    const w = fab.offsetWidth || FAB_SZ, h = fab.offsetHeight || FAB_SZ;
+    let left, top;
+    if (p && typeof p.left === 'number' && typeof p.top === 'number') { left = p.left; top = p.top; }
+    else { left = innerWidth - w - 14; top = Math.round(innerHeight * 0.45); }
+    fab.style.left = Math.max(2, Math.min(left, innerWidth - w - 2)) + 'px';
+    fab.style.top = Math.max(2, Math.min(top, innerHeight - h - 2)) + 'px';
+    fab.style.right = 'auto'; fab.style.bottom = 'auto';
 }
 
 /* ── перетаскивание: элемент двигается за пальцем/мышью, позиция запоминается ── */
@@ -507,7 +543,7 @@ function clampIntoView(el) {
     el.style.left = l + 'px'; el.style.top = t + 'px';
 }
 function clampAll() {
-    clampIntoView(root.querySelector('.cq-fab'));
+    applyFabPos();
     clampIntoView(pop);
 }
 function dragify(el, key, handle) {
@@ -574,7 +610,7 @@ jQuery(async () => {
     window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { clampAll(); relayoutFlags(); }, 200); });
     window.addEventListener('orientationchange', () => setTimeout(clampAll, 300));
     redo();
-    console.log('[bookmark] готово, v2.2.1');
+    console.log('[bookmark] готово, v2.3.0');
     // проверка «жетон на экране»: стили ST приезжают параллельно нашим, поэтому не сразу
     setTimeout(() => { addWandItem(); guard(); }, 1500);
     // другие расширения дорисовывают свои панели позже нас — проверяем ещё раз, когда всё улеглось

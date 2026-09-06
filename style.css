@@ -82,7 +82,8 @@
 
 /* ── жетон: стопка бумаги со стикером ── */
 #cq-root .cq-fab{
-  position:fixed;right:14px;bottom:150px;width:42px;height:42px;z-index:2147483647;
+  position:fixed !important;left:auto;right:14px;top:45%;bottom:auto;
+  width:42px;height:42px;z-index:2147483647 !important;
   display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;
   cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
   border:1px solid var(--bm-edge);border-radius:3px;
@@ -574,7 +575,8 @@
 
 /* ── телефон: жетон крупнее и с запасом от краёв, плашка почти во весь экран ── */
 @media (max-width: 700px), (pointer: coarse) {
-  #cq-root .cq-fab{ width:50px; height:50px; font-size:21px; right:10px; bottom:110px; }
+  /* координаты жетону ставит скрипт (см. applyFabPos) — здесь только размер */
+  #cq-root .cq-fab{ width:50px; height:50px; font-size:21px; }
   #cq-root .cq-pop{
     width:min(360px, calc(100vw - 16px));
     max-height:70vh; right:8px; left:auto; bottom:170px;
@@ -618,3 +620,8 @@
 #cq-root#cq-root{ display:block !important; }
 #cq-root#cq-root .cq-fab{ visibility:visible !important; display:flex !important; }
 #cq-root#cq-root.open .cq-pop{ visibility:visible !important; }
+
+/* Жетон всегда с плотной заливкой. В стекле фон полупрозрачный, а Safari на телефоне
+   такие поверхности местами рисует пустотой — кружок «пропадает». Плашке стекло оставляем. */
+#cq-root#cq-root.cq-glass .cq-fab{ background-image:none !important; background-color:#f7f0e8 !important; }
+#cq-root#cq-root.cq-glass.cq-base-dark .cq-fab{ background-color:#26222b !important; }
