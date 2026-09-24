@@ -60,3 +60,41 @@ export function toast(msg, type = 'info') {
     try { window.toastr?.[type]?.(msg, '', { timeOut: 1800 }); }
     catch (e) { console.log('[bookmark]', msg); }
 }
+
+/* ============================================================================
+ * Журнал для отчёта. Когда человек пишет «у меня не работает», по словам чинить
+ * нельзя — нужен факт. Пишем ошибки, ненайденные цитаты и последние шаги;
+ * храним в localStorage, чтобы отчёт пережил перезагрузку страницы.
+ * ========================================================================== */
+const LOG_KEY = 'bookmark_log';
+const LOG_MAX = 24;
+let LOG = { err: [], act: [], miss: [] };
+try {
+    const raw = localStorage.getItem(LOG_KEY);
+    if (raw) { const o = JSON.parse(raw); if (o) LOG = { err: o.err || [], act: o.act || [], miss: o.miss || [] }; }
+} catch (e) { /* приватный режим или заблокированное хранилище — работаем в памяти */ }
+
+const clip = (v, n = 240) => String(v ?? '').replace(/\s+/g, ' ').slice(0, n);
+function saveLog() { try { localStorage.setItem(LOG_KEY, JSON.stringify(LOG)); } catch (e) {} }
+
+export function logErr(where, e) {
+    const m = clip(e?.message || e?.reason || e || 'неизвестная ошибка', 300);
+    if (LOG.err.some(x => x.m === m)) return;           // одно и то же не копим
+    LOG.err.unshift({ t: Date.now(), w: where, m, s: clip(e?.stack, 500) });
+    if (LOG.err.length > LOG_MAX) LOG.err.length = LOG_MAX;
+    saveLog();
+}
+export function logAct(what) {
+    LOG.act.unshift({ t: Date.now(), m: clip(what, 160) });
+    if (LOG.act.length > LOG_MAX) LOG.act.length = LOG_MAX;
+    saveLog();
+}
+export function logMiss(text) {
+    const m = clip(text, 120);
+    if (LOG.miss.includes(m)) return;
+    LOG.miss.unshift(m);
+    if (LOG.miss.length > 8) LOG.miss.length = 8;
+    saveLog();
+}
+export function getLog() { return LOG; }
+export function clearLog() { LOG = { err: [], act: [], miss: [] }; saveLog(); }

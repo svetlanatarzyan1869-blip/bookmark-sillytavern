@@ -652,3 +652,45 @@
 #cq-root#cq-root.cq-in-popup .cq-close{ display:none !important; }
 /* окно ST под нашу бумагу: без своих поднятых полей и с бумажной подложкой */
 .bm-host{ width:100%; }
+
+/* ══ отчёт об ошибке ══
+   Сообщение сверху — сразу и заметно, кнопка под списком неброская: нужна редко,
+   но должна быть под рукой, когда человек пишет «у меня не работает». */
+#cq-root .cq-err{
+  margin:2px 0 12px;padding:9px 11px 8px;
+  border:1px solid rgba(168,86,70,.45);border-left:3px solid rgba(168,86,70,.75);
+  border-radius:2px;background:rgba(168,86,70,.10);
+}
+#cq-root .cq-err-ttl{
+  font-family:'Cormorant Garamond',Georgia,serif;font-size:13px;font-weight:600;
+  letter-spacing:.04em;color:var(--bm-ink);margin-bottom:3px;
+}
+#cq-root .cq-err-msg{font-family:'PT Serif',Georgia,serif;font-size:11.5px;color:var(--bm-ink);line-height:1.45;}
+#cq-root .cq-err-when{font-size:10px;color:var(--bm-ink3);margin-top:4px;}
+
+#cq-root .cq-repbtn{
+  display:block;margin:14px auto 2px;padding:5px 10px;
+  font-family:'PT Serif',Georgia,serif;font-size:10px;color:var(--bm-ink3);
+  background:none;border:none;border-bottom:1px dotted var(--bm-edge-soft);
+  cursor:pointer;opacity:.75;
+}
+#cq-root .cq-repbtn:hover{color:var(--bm-ink2);opacity:1;}
+
+#cq-root .cq-report{padding:2px 0 4px;}
+#cq-root .cq-rep-hint{font-family:'PT Serif',Georgia,serif;font-size:11px;color:var(--bm-ink2);margin-bottom:8px;line-height:1.45;}
+#cq-root .cq-rep-text{
+  width:100%;box-sizing:border-box;height:210px;resize:vertical;
+  font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10px;line-height:1.45;
+  color:var(--bm-ink);background:var(--bm-field);border:1px solid var(--bm-edge-soft);
+  border-radius:2px;padding:7px 8px;
+}
+#cq-root .cq-rep-bar{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+#cq-root .cq-rep-bar button{
+  font-family:'PT Serif',Georgia,serif;font-size:10.5px;color:var(--bm-ink2);
+  background:var(--bm-card);border:1px solid var(--bm-edge-soft);border-radius:2px;
+  padding:6px 10px;cursor:pointer;
+}
+#cq-root .cq-rep-bar .cq-rep-copy{color:var(--bm-ink);font-weight:700;}
+#cq-root .cq-rep-bar button:hover{color:var(--bm-ink);}
+/* текст отчёта тема ST красить не должна — он и так моноширинный и служебный */
+#cq-root#cq-root .cq-rep-text{color:var(--bm-ink) !important;}

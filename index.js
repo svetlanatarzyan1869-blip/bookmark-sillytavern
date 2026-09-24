@@ -3,10 +3,11 @@
  * Панель-сборник + настройки + подключение движка выписки к событиям чата.
  * ========================================================================== */
 import { settings, saveSettings, getQuotes, setQuotes, getFolders, setFolders,
-         getColors, setColors, norm, toast } from './store.js';
+         getColors, setColors, norm, toast, logErr, logAct, getLog, clearLog } from './store.js';
 import { decorate, ensureDecorated, paint, repaintAll, relayoutFlags, wire, jumpTo, unwrap } from './engine.js';
 
 const ROOT_ID = 'cq-root';
+const VERSION = '2.5.0';
 const PACKS = [
     { k: 'main', name: 'Основные', cols: ['rgba(244,120,120,.55)', 'rgba(255,214,102,.55)', 'rgba(150,215,150,.55)', 'rgba(140,200,255,.55)', 'rgba(200,160,255,.55)'] },
     { k: 'pastel', name: 'Пастель', cols: ['rgba(255,192,203,.6)', 'rgba(255,228,170,.6)', 'rgba(190,235,205,.6)', 'rgba(190,215,245,.6)', 'rgba(222,205,245,.6)'] },
@@ -120,9 +121,111 @@ function itemCard(e) {
     }
     return card + '</div>';
 }
+/* ══════════════════ отчёт для автора ══════════════════
+   Ошибку показываем сразу над списком, а полный журнал прячем за неброской
+   кнопкой: она нужна редко, но должна быть под рукой, когда человек пишет,
+   что у него не работает. */
+let reportOpen = false;
+
+const when = t => { try { return new Date(t).toLocaleString('ru-RU'); } catch (e) { return String(t); } };
+function ago(t) {
+    const m = Math.round((Date.now() - t) / 60000);
+    if (m < 1) return 'только что';
+    if (m < 60) return `${m} мин назад`;
+    const h = Math.round(m / 60);
+    return h < 24 ? `${h} ч назад` : `${Math.round(h / 24)} дн назад`;
+}
+function buildReport() {
+    const L = getLog(), s = settings(), out = [];
+    out.push('bookmark⋆⭒˚.⋆ — отчёт');
+    out.push(`версия расширения: ${VERSION}`);
+    out.push(`время: ${when(Date.now())}`);
+    out.push('');
+    out.push('— ОКРУЖЕНИЕ —');
+    out.push(`окно: ${innerWidth}×${innerHeight}, плотность: ${devicePixelRatio || 1}`);
+    out.push(`устройство: ${String(navigator.userAgent).slice(0, 180)}`);
+    out.push(`тема: ${s.theme}, фон: ${s.bg}, каракули: ${s.doodle ? 'да' : 'нет'}`);
+    try {
+        const fab = root?.querySelector('.cq-fab');
+        const r = fab?.getBoundingClientRect();
+        out.push(`жетон: ${r ? `${Math.round(r.left)}×${Math.round(r.top)}, ${Math.round(r.width)}px` : 'нет в разметке'}` +
+            `, наши стили: ${cssBroken ? 'НЕ применились' : 'на месте'}, сборник в окне ST: ${inPopup ? 'да' : 'нет'}`);
+        out.push(`классы: ${root?.className || '—'}`);
+    } catch (e) { out.push(`жетон прочитать не вышло: ${e?.message}`); }
+    out.push('');
+    out.push('— СБОРНИК —');
+    try {
+        const ctx = SillyTavern.getContext();
+        out.push(`сообщений в чате: ${ctx.chat?.length ?? '?'}, метаданные чата: ${ctx.chatMetadata ? 'есть' : 'нет'}`);
+    } catch (e) { out.push(`контекст ST недоступен: ${e?.message}`); }
+    out.push(`цитат: ${getQuotes().length}, папок: ${getFolders().length}, своих цветов: ${getColors().length}`);
+    out.push(`цитат без метки сообщения: ${getQuotes().filter(q => q?.mesId == null).length}`);
+    if (L.miss.length) {
+        out.push('не нашлись в тексте (последние):');
+        L.miss.forEach(m => out.push(`  • «${m}»`));
+    }
+    out.push('');
+    out.push(`— ОШИБКИ (${L.err.length}) —`);
+    if (!L.err.length) out.push('нет');
+    L.err.forEach(e => { out.push(`[${when(e.t)}] ${e.w}: ${e.m}`); if (e.s) out.push(`    ${e.s}`); });
+    out.push('');
+    out.push('— ПОСЛЕДНИЕ ШАГИ —');
+    if (!L.act.length) out.push('пусто');
+    L.act.forEach(a => out.push(`[${when(a.t)}] ${a.m}`));
+    return out.join('\n');
+}
+function errBlock() {
+    const L = getLog();
+    if (!L.err.length) return '';
+    const e = L.err[0];
+    return '<div class="cq-err">' +
+        '<div class="cq-err-ttl">Что-то пошло не так</div>' +
+        `<div class="cq-err-msg">${esc(e.m)}</div>` +
+        `<div class="cq-err-when">${esc(e.w)} · ${esc(ago(e.t))}${L.err.length > 1 ? ` · всего ошибок: ${L.err.length}` : ''}</div>` +
+        '</div>';
+}
+const reportBtn = () => '<button class="cq-repbtn" type="button">отчёт для Светлячка</button>';
+const reportView = () => '<div class="cq-report">' +
+    '<div class="cq-rep-hint">Скопируй и пришли Светлячку — по этому тексту видно, что именно сломалось.</div>' +
+    `<textarea class="cq-rep-text" readonly>${esc(buildReport())}</textarea>` +
+    '<div class="cq-rep-bar">' +
+    '<button class="cq-rep-copy" type="button">скопировать</button>' +
+    '<button class="cq-rep-clear" type="button">очистить журнал</button>' +
+    '<button class="cq-rep-back" type="button">назад</button>' +
+    '</div></div>';
+
+function wireReport() {
+    out.querySelector('.cq-rep-back')?.addEventListener('click', e => { e.stopPropagation(); reportOpen = false; draw(); });
+    out.querySelector('.cq-rep-clear')?.addEventListener('click', e => {
+        e.stopPropagation(); clearLog(); toast('Журнал очищен', 'success'); draw();
+    });
+    out.querySelector('.cq-rep-copy')?.addEventListener('click', e => {
+        e.stopPropagation();
+        const ta = out.querySelector('.cq-rep-text'); if (!ta) return;
+        const done = () => toast('📋 Отчёт скопирован', 'success');
+        try {
+            if (navigator.clipboard?.writeText) { navigator.clipboard.writeText(ta.value).then(done, () => legacyCopy(ta, done)); return; }
+        } catch (err) { /* обычный буфер бывает запрещён — уходим на старый способ */ }
+        legacyCopy(ta, done);
+    });
+}
+function legacyCopy(ta, done) {
+    try {
+        ta.removeAttribute('readonly'); ta.focus();
+        // на айфоне выделения в поле мало — нужен диапазон по содержимому
+        try { const r = document.createRange(); r.selectNodeContents(ta); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); } catch (e) {}
+        ta.setSelectionRange(0, ta.value.length);
+        const ok = document.execCommand?.('copy');
+        ta.setAttribute('readonly', 'readonly');
+        if (ok) { done(); return; }
+    } catch (e) {}
+    toast('Скопируй текст вручную — он выделен', 'warning');
+}
+
 function draw() {
+    if (reportOpen) { out.innerHTML = reportView(); wireReport(); return; }
     const visible = getQuotes().filter(r => inFolder(r, curFolder));
-    let h = chipsBar();
+    let h = errBlock() + chipsBar();
     if (curFolder !== 'all' && curFolder !== 'none') {
         const f = folderById(curFolder);
         const fpa = f?.pattern && f.pattern !== 'none' ? ` data-pat="${f.pattern}"` : '';
@@ -150,6 +253,7 @@ function draw() {
     }
     h += visible.length ? visible.map(itemCard).join('')
         : `<div class="cq-empty">${getQuotes().length ? 'В этой папке пусто.' : 'Пока пусто.<br>Двойной тап по фразе в сообщении — и она здесь.'}</div>`;
+    h += reportBtn();
     out.innerHTML = h;
     wireList();
 }
@@ -157,6 +261,9 @@ function draw() {
 /* ── обработчики списка ── */
 function wireList() {
     const q = s => out.querySelectorAll(s);
+    out.querySelector('.cq-repbtn')?.addEventListener('click', async ev => {
+        ev.stopPropagation(); logAct('открыт отчёт'); reportOpen = true; draw();
+    });
     q('.cq-chip').forEach(b => b.addEventListener('click', async ev => {
         ev.stopPropagation();
         const f = b.dataset.f;
@@ -273,7 +380,7 @@ function addSettingsPanel() {
     <div class="bookmark-settings">
       <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-          <b>bookmark⋆⭒˚.⋆</b> <small style="opacity:.6">v2.4.0</small><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+          <b>bookmark⋆⭒˚.⋆</b> <small style="opacity:.6">v${VERSION}</small><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
           <label class="checkbox_label"><input id="bm_doodle" type="checkbox" ${s.doodle ? 'checked' : ''}><span>Каракули на плашке</span></label>
@@ -334,6 +441,7 @@ function setOpen(on) {
    плашка ездит вместе с кружком. Окно ST держим только на крайний случай. */
 function openPanel() {
     if (inPopup) return;
+    logAct(`открыт сборник (цитат: ${getQuotes().length}, папок: ${getFolders().length})`);
     root.classList.add('open');
     if (cssBroken) pop.style.display = 'block';
     draw();
@@ -382,7 +490,8 @@ function rescuePop() {
     const over = whoIsOnTop(pop);
     document.body.appendChild(root);
     placePop();
-    if (popVisible()) { rescuing = false; console.log('[bookmark] плашку перекрывал', describe(over), '— поправила'); return; }
+    if (popVisible()) { rescuing = false; logAct(`плашку перекрывал ${describe(over)} — поправила`); console.log('[bookmark] плашку перекрывал', describe(over), '— поправила'); return; }
+    logErr('показ плашки', `плашку не видно, мешает ${describe(over)} — открыла в окне таверны`);
     console.warn('[bookmark] плашку не видно, мешает', describe(over), '— открываю в окне таверны');
     toast('Плашку перекрывает чужой слой — открыла её в окне таверны');
     root.classList.remove('open');
@@ -493,6 +602,7 @@ function ensureMounted() {
     if (!broken) return;
     inDoc?.remove();
     root = null;
+    logAct('разметку снесло — собрала заново');
     mount();
 }
 
@@ -507,6 +617,7 @@ function guard(final = false) {
     if (!ok && !final) { injectCss(); setTimeout(() => guard(true), 1500); return; }
     if (!ok) {
         cssBroken = true;
+        logErr('оформление', 'style.css не применился — жетон и плашка на запасных стилях');
         Object.assign(fab.style, BARE_FAB);
         Object.assign(pop.style, BARE_POP);
         if (root.classList.contains('open')) pop.style.display = 'block';
@@ -520,6 +631,8 @@ function guard(final = false) {
         applyFabPos();
     }
     const covered = freeSpot(fab);
+    if (covered) logAct(`жетон: ${covered}`);
+    if (away) logAct('жетон был за краем экрана — вернула на место');
     console.log('[bookmark] жетон:', {
         стилиНаши: ok, вернулиНаМесто: away, ктоПерекрывал: covered,
         вДокументе: root.isConnected, положение: fab.getBoundingClientRect(), классы: root.className,
@@ -746,6 +859,9 @@ jQuery(async () => {
     if (window.__bookmarkLoaded) { console.warn('[bookmark] уже загружено — вторая копия отключена'); return; }
     window.__bookmarkLoaded = true;
     const { eventSource, event_types } = SillyTavern.getContext();
+    // всё, что падает на странице, пишем в журнал: чужие расширения ломают нас не реже своего кода
+    window.addEventListener('error', ev => logErr('страница', ev.error || ev.message));
+    window.addEventListener('unhandledrejection', ev => logErr('обещание', ev.reason));
     mount();
     addSettingsPanel();
     addWandItem();
@@ -762,7 +878,7 @@ jQuery(async () => {
     window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { clampAll(); relayoutFlags(); }, 200); });
     window.addEventListener('orientationchange', () => setTimeout(clampAll, 300));
     redo();
-    console.log('[bookmark] готово, v2.4.0');
+    console.log(`[bookmark] готово, v${VERSION}`);
     // проверка «жетон на экране»: стили ST приезжают параллельно нашим, поэтому не сразу
     setTimeout(() => { addWandItem(); guard(); }, 1500);
     // другие расширения дорисовывают свои панели позже нас — проверяем ещё раз, когда всё улеглось

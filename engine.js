@@ -7,7 +7,7 @@
  *   • источник цитаты — mesId, а не копия текста: переход точный;
  *   • слушатели вешаются на document ОДИН раз.
  * ========================================================================== */
-import { getQuotes, setQuotes, getFolders, norm, toast } from './store.js';
+import { getQuotes, setQuotes, getFolders, norm, toast, logErr, logMiss } from './store.js';
 
 const DEF = 'rgba(255,214,102,.55)';
 const SKIP = { SCRIPT: 1, STYLE: 1, BUTTON: 1, SVG: 1, PATH: 1, DETAILS: 1, SUMMARY: 1, INPUT: 1, TEXTAREA: 1, CODE: 1, PRE: 1, A: 1, IMG: 1, MARK: 1 };
@@ -176,7 +176,7 @@ export function paint(st) {
     for (const q of getQuotes()) {
         if (!q?.text) continue;
         const t = norm(q.text), at = findRun(st, t);
-        if (at < 0) continue;
+        if (at < 0) { logMiss(t); continue; }
         const L = t.split(' ').length;
         const c = (q.folderId && col[q.folderId]) || DEF;
         runOn(st, at, at + L - 1, 'cq-on', c);
