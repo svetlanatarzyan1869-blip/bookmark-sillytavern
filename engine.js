@@ -7,7 +7,7 @@
  *   • источник цитаты — mesId, а не копия текста: переход точный;
  *   • слушатели вешаются на document ОДИН раз.
  * ========================================================================== */
-import { getQuotes, setQuotes, getFolders, norm, toast, logErr, logMiss } from './store.js';
+import { getQuotes, setQuotes, getFolders, norm, toast, logErr, logMiss, unlogMiss } from './store.js';
 
 const DEF = 'rgba(255,214,102,.55)';
 const SKIP = { SCRIPT: 1, STYLE: 1, BUTTON: 1, SVG: 1, PATH: 1, DETAILS: 1, SUMMARY: 1, INPUT: 1, TEXTAREA: 1, CODE: 1, PRE: 1, A: 1, IMG: 1, MARK: 1 };
@@ -68,7 +68,7 @@ export function ensureDecorated(root) {
 export function decorate(root) {
     if (!root) return null;
     unwrap(root);
-    const st = { root, WSEG: [], GSEG: [], WTEXT: [], WSENT: [], SENTR: {}, SID: 0, RUNS: [] };
+    const st = { root, WSEG: [], GSEG: [], WTEXT: [], WFOLD: [], WSENT: [], SENTR: {}, SID: 0, RUNS: [] };
 
     const nodes = [];
     const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -107,6 +107,7 @@ function wrapGroup(st, ns) {
     words.forEach((wd, k) => {
         const gi = base + k;
         st.WTEXT[gi] = norm(concat.slice(wd[0], wd[1]));
+        st.WFOLD[gi] = fold(st.WTEXT[gi]);
         st.WSEG[gi] = [];
         const gs = wd[2] < 0 ? -1 : sidBase + wd[2];
         st.WSENT[gi] = gs;
@@ -157,14 +158,66 @@ function runClear(st, cls) {
     const c = el => { el.classList.remove(cls); el.style.background = ''; el.style.borderRadius = ''; };
     for (let i = 0; i < st.WSEG.length; i++) { (st.WSEG[i] || []).forEach(c); (st.GSEG[i] || []).forEach(c); }
 }
+/* ── поиск цитаты в сообщении ──
+   Цитату могли переписать руками: другой регистр, ё вместо е, другое тире или
+   кавычки, переехавшая запятая, опечатка. Поэтому сравниваем не сами слова, а их
+   «сглаженный» вид, а если и так не сошлось — второй проход с допуском. */
+function fold(w) {
+    return String(w ?? '')
+        .toLowerCase()
+        .replace(/ё/g, 'е')
+        .replace(/[\u2010-\u2015\u2212]/g, '-')                    // разные тире
+        .replace(/[\u2018\u2019\u201a\u201b\u2032]/g, "'")        // разные апострофы
+        .replace(/[\u201c\u201d\u201e\u00ab\u00bb\u2033]/g, '"') // разные кавычки
+        .replace(/^[^0-9a-zа-я"']+/, '')                             // знаки по краям слова
+        .replace(/[^0-9a-zа-я"']+$/, '');
+}
+/* одно и то же слово: совпало после сглаживания, либо опечатка в одну букву,
+   либо одно — начало другого (правленое окончание) */
+function near(a, b) {
+    if (a === b) return true;
+    if (!a || !b) return false;
+    const la = a.length, lb = b.length;
+    if (la >= 4 && lb >= 4 && (a.startsWith(b) || b.startsWith(a))) return true;
+    if (Math.abs(la - lb) > 1 || (la < 5 && lb < 5)) return false;
+    let i = 0, j = 0, diff = 0;
+    while (i < la && j < lb) {
+        if (a[i] === b[j]) { i++; j++; continue; }
+        if (++diff > 1) return false;
+        if (la > lb) i++; else if (lb > la) j++; else { i++; j++; }
+    }
+    return diff + (la - i) + (lb - j) <= 1;
+}
+/* возвращает [начало, конец] в словах сообщения или null */
 function findRun(st, text) {
     const qw = norm(text).split(' '), L = qw.length;
-    if (!L || !qw[0]) return -1;
-    outer: for (let i = 0; i + L <= st.WTEXT.length; i++) {
-        for (let j = 0; j < L; j++) if (st.WTEXT[i + j] !== qw[j]) continue outer;
-        return i;
+    if (!L || !qw[0]) return null;
+    const qf = qw.map(fold), W = st.WFOLD || [];
+    outer: for (let i = 0; i + L <= W.length; i++) {
+        for (let j = 0; j < L; j++) if (W[i + j] !== qf[j]) continue outer;
+        return [i, i + L - 1];
     }
-    return -1;
+    if (L < 2) return null;
+    let best = null, bestScore = 0, bestRank = 0;
+    for (const len of [L, L - 1, L + 1]) {
+        if (len < 1) continue;
+        for (let i = 0; i + len <= W.length; i++) {
+            let hit = 0, p = 0, q = 0;
+            while (p < len && q < L) {
+                if (near(W[i + p], qf[q])) { hit++; p++; q++; continue; }
+                // разошлись: пропускаем слово там, где это дешевле
+                if (p + 1 < len && near(W[i + p + 1], qf[q])) { p++; continue; }
+                if (q + 1 < L && near(W[i + p], qf[q + 1])) { q++; continue; }
+                p++; q++;
+            }
+            const score = hit / L;
+            // при равном счёте берём кусок со сходящимися краями, иначе подсветка
+            // норовит прихватить лишнее слово слева
+            const rank = score + (near(W[i], qf[0]) ? 0.05 : 0) + (near(W[i + len - 1], qf[L - 1]) ? 0.05 : 0);
+            if (rank > bestRank) { bestRank = rank; bestScore = score; best = [i, i + len - 1]; }
+        }
+    }
+    return bestScore >= 0.72 ? best : null;
 }
 export function paint(st) {
     if (!st) return;
@@ -173,15 +226,23 @@ export function paint(st) {
     st.WSEG.forEach(sg => sg?.forEach(el => el.removeAttribute('data-q')));
     st.root.querySelectorAll('.cq-flag').forEach(e => e.remove());
 
+    // Промах засчитываем только по РОДНОМУ сообщению цитаты: не найтись в чужих
+    // сообщениях — это норма, иначе в отчёт попадёт вся библиотека разом.
+    const myId = mesIdOf(st);
     for (const q of getQuotes()) {
         if (!q?.text) continue;
-        const t = norm(q.text), at = findRun(st, t);
-        if (at < 0) { logMiss(t); continue; }
-        const L = t.split(' ').length;
+        const t = norm(q.text), run = findRun(st, t);
+        if (!run) {
+            const mine = q.mesId != null && myId != null && q.mesId === myId;
+            if (mine && st.WFOLD.length) logMiss(t);   // пустое сообщение ещё не разобрано — это «рано», а не промах
+            continue;
+        }
+        unlogMiss(t);
+        const [at, en] = run;
         const c = (q.folderId && col[q.folderId]) || DEF;
-        runOn(st, at, at + L - 1, 'cq-on', c);
-        for (let j = 0; j < L; j++) (st.WSEG[at + j] || []).forEach(el => el.dataset.q = t);
-        st.RUNS.push([at, at + L - 1, c]);
+        runOn(st, at, en, 'cq-on', c);
+        for (let j = at; j <= en; j++) (st.WSEG[j] || []).forEach(el => el.dataset.q = t);
+        st.RUNS.push([at, en, c]);
     }
     flags(st);
 }
@@ -425,21 +486,21 @@ export function jumpTo(q) {
     if (q.mesId != null) mes = document.querySelector(`#chat .mes[mesid="${q.mesId}"]`);
     if (!mes) {
         for (const el of document.querySelectorAll('#chat .mes_text')) {
-            if (el.__cq && findRun(el.__cq, q.text) >= 0) { mes = el.closest('.mes'); break; }
+            if (el.__cq && findRun(el.__cq, q.text)) { mes = el.closest('.mes'); break; }
         }
     }
     if (!mes) { toast('Сообщения нет на экране', 'warning'); return false; }
     const st = mes.querySelector('.mes_text')?.__cq;
-    const at = st ? findRun(st, q.text) : -1;
-    const target = at >= 0 ? firstSeg(st, at) : mes;
+    const run = st ? findRun(st, q.text) : null;
+    const target = run ? firstSeg(st, run[0]) : mes;
     target?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    if (st && at >= 0) {
-        const L = norm(q.text).split(' ').length;
+    if (run) {
+        const [at, en] = run;
         let n = 0, on = false;
         const iv = setInterval(() => {
             on = !on;
-            for (let i = at; i < at + L; i++) (st.WSEG[i] || []).forEach(el => el.style.outline = on ? '2px solid #a5714e' : '');
-            if (++n >= 6) { clearInterval(iv); for (let i = at; i < at + L; i++) (st.WSEG[i] || []).forEach(el => el.style.outline = ''); }
+            for (let i = at; i <= en; i++) (st.WSEG[i] || []).forEach(el => el.style.outline = on ? '2px solid #a5714e' : '');
+            if (++n >= 6) { clearInterval(iv); for (let i = at; i <= en; i++) (st.WSEG[i] || []).forEach(el => el.style.outline = ''); }
         }, 250);
     }
     return true;

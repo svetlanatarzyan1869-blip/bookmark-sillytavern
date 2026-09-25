@@ -96,5 +96,13 @@ export function logMiss(text) {
     if (LOG.miss.length > 8) LOG.miss.length = 8;
     saveLog();
 }
+/* цитата нашлась — убираем её из списка промахов, иначе отчёт будет врать
+   о старых неудачах (например, о той самой первой отрисовке, когда сообщение
+   ещё не было разобрано) */
+export function unlogMiss(text) {
+    const m = clip(text, 120);
+    const i = LOG.miss.indexOf(m);
+    if (i >= 0) { LOG.miss.splice(i, 1); saveLog(); }
+}
 export function getLog() { return LOG; }
 export function clearLog() { LOG = { err: [], act: [], miss: [] }; saveLog(); }

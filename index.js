@@ -7,7 +7,7 @@ import { settings, saveSettings, getQuotes, setQuotes, getFolders, setFolders,
 import { decorate, ensureDecorated, paint, repaintAll, relayoutFlags, wire, jumpTo, unwrap } from './engine.js';
 
 const ROOT_ID = 'cq-root';
-const VERSION = '2.5.0';
+const VERSION = '2.6.0';
 const PACKS = [
     { k: 'main', name: 'Основные', cols: ['rgba(244,120,120,.55)', 'rgba(255,214,102,.55)', 'rgba(150,215,150,.55)', 'rgba(140,200,255,.55)', 'rgba(200,160,255,.55)'] },
     { k: 'pastel', name: 'Пастель', cols: ['rgba(255,192,203,.6)', 'rgba(255,228,170,.6)', 'rgba(190,235,205,.6)', 'rgba(190,215,245,.6)', 'rgba(222,205,245,.6)'] },
