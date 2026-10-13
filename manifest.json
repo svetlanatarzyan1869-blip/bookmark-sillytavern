@@ -1,12 +1,12 @@
 {
-  "display_name": "bookmark⋆⭒˚.⋆",
-  "loading_order": 100,
-  "requires": [],
-  "optional": [],
-  "js": "index.js",
-  "css": "style.css",
-  "author": "Svetlyachok",
-  "version": "2.6.0",
-  "homePage": "https://github.com/svetlanatarzyan1869-blip/bookmark-sillytavern",
-  "auto_update": true
+    "display_name": "bookmark⋆⭒˚.⋆",
+    "loading_order": 100,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Svetlyachok",
+    "version": "2.6.1",
+    "homePage": "https://github.com/svetlanatarzyan1869-blip/bookmark-sillytavern",
+    "auto_update": true
 }

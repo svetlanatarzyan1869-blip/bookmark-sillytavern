@@ -20,7 +20,9 @@ let root, pop, out, curFolder = 'all', movingId = null, notingId = null;
 let fsetOpen = false, pickerOpen = false, curPackKey = 'main';
 let dragging = false;          // палец сейчас тащит жетон или плашку — не мешаем
 
-const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+// цвет из данных чата пропускаем в style только если это похоже на цвет (иначе из чужого файла чата можно вставить свой CSS/HTML)
+const safeColor = c => (typeof c === 'string' && /^(#[0-9a-fA-F]{3,8}|(rgb|rgba|hsl|hsla)\([0-9.,%\s]+\)|[a-zA-Z]{3,20})$/.test(c.trim())) ? c.trim() : '';
 const preview = (s, n = 220) => { s = norm(s); return s.length > n ? s.slice(0, n) + '…' : s; };
 const packCols = p => p.k === 'custom' ? getColors().slice() : p.cols;
 const curPack = () => PACKS.find(p => p.k === curPackKey) || PACKS[0];
@@ -93,29 +95,29 @@ function chipsBar() {
     c += `<button class="cq-chip${curFolder === 'none' ? ' on' : ''}" data-f="none">Без папки ${countIn('none')}</button>`;
     for (const f of getFolders()) {
         const pa = f.pattern && f.pattern !== 'none' ? ` data-pat="${f.pattern}"` : '';
-        const st = f.color ? ` style="--bm-fc:${f.color}"` : '';
-        c += `<button class="cq-chip${curFolder === f.id ? ' on' : ''}" data-f="${f.id}"${pa}${st}>${esc(f.name)} ${countIn(f.id)}</button>`;
+        const st = f.color ? ` style="--bm-fc:${safeColor(f.color)}"` : '';
+        c += `<button class="cq-chip${curFolder === f.id ? ' on' : ''}" data-f="${esc(f.id)}"${pa}${st}>${esc(f.name)} ${countIn(f.id)}</button>`;
     }
     c += '<button class="cq-chip cq-chip-add" data-f="__add">＋ папка</button>';
     return `<div class="cq-chips">${c}</div>`;
 }
 function itemCard(e) {
     const col = colorOf(e.folderId);
-    let card = `<div class="cq-item${col ? ' cq-col' : ''}" data-id="${e.id}"${col ? ` style="--bm-c:${col}"` : ''}>` +
+    let card = `<div class="cq-item${col ? ' cq-col' : ''}" data-id="${esc(e.id)}"${col ? ` style="--bm-c:${safeColor(col)}"` : ''}>` +
         `<div class="cq-quote">«${esc(preview(e.text))}»</div>`;
     if (e.note) card += `<div class="cq-note">${esc(e.note)}</div>`;
     card += '<div class="cq-item-tools">' +
-        `<button class="cq-src" data-id="${e.id}" title="перейти к цитате">🔎</button>` +
-        `<button class="cq-note-btn" data-id="${e.id}" title="заметка">📝</button>` +
-        `<button class="cq-move" data-id="${e.id}" title="в папку">📁</button>` +
-        `<button class="cq-del" data-id="${e.id}" title="удалить">🗑</button></div>`;
+        `<button class="cq-src" data-id="${esc(e.id)}" title="перейти к цитате">🔎</button>` +
+        `<button class="cq-note-btn" data-id="${esc(e.id)}" title="заметка">📝</button>` +
+        `<button class="cq-move" data-id="${esc(e.id)}" title="в папку">📁</button>` +
+        `<button class="cq-del" data-id="${esc(e.id)}" title="удалить">🗑</button></div>`;
     if (String(notingId) === String(e.id)) {
         card += `<div class="cq-notebox"><textarea class="cq-note-ta" placeholder="твоя заметка…">${esc(e.note || '')}</textarea>` +
-            `<div class="cq-note-row"><button class="cq-note-save" data-id="${e.id}">сохранить</button><button class="cq-note-cancel">✕</button></div></div>`;
+            `<div class="cq-note-row"><button class="cq-note-save" data-id="${esc(e.id)}">сохранить</button><button class="cq-note-cancel">✕</button></div></div>`;
     }
     if (String(movingId) === String(e.id)) {
-        let o = `<button class="cq-mv" data-id="${e.id}" data-t="none">Без папки</button>`;
-        for (const f of getFolders()) o += `<button class="cq-mv${e.folderId === f.id ? ' cur' : ''}" data-id="${e.id}" data-t="${f.id}">📁 ${esc(f.name)}</button>`;
+        let o = `<button class="cq-mv" data-id="${esc(e.id)}" data-t="none">Без папки</button>`;
+        for (const f of getFolders()) o += `<button class="cq-mv${e.folderId === f.id ? ' cur' : ''}" data-id="${esc(e.id)}" data-t="${esc(f.id)}">📁 ${esc(f.name)}</button>`;
         o += `<button class="cq-mv cq-mv-x" data-t="__cancel">✕</button>`;
         card += `<div class="cq-movebar"><span class="cq-mv-l">переместить в:</span>${o}</div>`;
     }
@@ -229,13 +231,13 @@ function draw() {
     if (curFolder !== 'all' && curFolder !== 'none') {
         const f = folderById(curFolder);
         const fpa = f?.pattern && f.pattern !== 'none' ? ` data-pat="${f.pattern}"` : '';
-        const fst = f?.color ? ` style="--bm-fc:${f.color};background-color:${f.color}"` : '';
+        const fst = f?.color ? ` style="--bm-fc:${safeColor(f.color)};background-color:${safeColor(f.color)}"` : '';
         h += `<div class="cq-folderbar"${fpa}${fst}><span>${esc(f?.name || '')}</span>` +
             `<span class="cq-fbtools"><button class="cq-fset${fsetOpen ? ' on' : ''}">${fsetOpen ? '⌄' : '›'}</button></span></div>`;
         if (fsetOpen) {
             h += '<div class="cq-fbox"><div class="cq-fsrow"><button class="cq-frename">✏️ переименовать</button><button class="cq-fdelete">🗑 удалить папку</button></div>';
             h += '<div class="cq-fslbl">орнамент</div><div class="cq-pats">';
-            for (const pn of PATS) h += `<button class="cq-pat${((f?.pattern) || 'none') === pn ? ' on' : ''}" data-p="${pn}"${f?.color ? ` style="background-color:${f.color}"` : ''}></button>`;
+            for (const pn of PATS) h += `<button class="cq-pat${((f?.pattern) || 'none') === pn ? ' on' : ''}" data-p="${pn}"${f?.color ? ` style="background-color:${safeColor(f.color)}"` : ''}></button>`;
             h += '</div><div class="cq-fslbl">цвет</div><div class="cq-packtabs">';
             for (const p of PACKS) h += `<button class="cq-packtab${p.k === curPackKey ? ' on' : ''}" data-pk="${p.k}">${p.name}</button>`;
             h += '</div><div class="cq-swatches">';
